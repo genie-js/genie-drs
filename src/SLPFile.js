@@ -1,5 +1,4 @@
 var DRSFile = require('./DRSFile')
-  , PNG = require('png').Png
   , Struct = require('awestruct')
 
 module.exports = SLPFile
@@ -7,10 +6,10 @@ module.exports = SLPFile
 // SLP commands
 var SLP_END_OF_ROW = 0x0f
   , SLP_COLOR_LIST = 0x00
-  , SLP_SKIP = 0x01
   , SLP_COLOR_LIST_EX = 0x02
-  , SLP_SKIP_EX = 0x03
   , SLP_COLOR_LIST_PLAYER = 0x06
+  , SLP_SKIP = 0x01
+  , SLP_SKIP_EX = 0x03
   , SLP_FILL = 0x07
   , SLP_FILL_PLAYER = 0x0a
   , SLP_SHADOW = 0x0b
@@ -41,7 +40,7 @@ var headerStruct = Struct({
   , outlineTableOffset: 'uint32'
   , paletteOffset: 'uint32'
   , properties: 'uint32'
-    
+
   , width: 'int32'
   , height: 'int32'
   , hotspot: Struct({
@@ -57,6 +56,7 @@ var headerStruct = Struct({
  * @extends DRSFile
  */
 function SLPFile(buf, file) {
+  if (!(this instanceof SLPFile)) return new SLPFile(buf, file)
   DRSFile.call(this, buf, file)
   this.frames = []
   this.bodyOffset = null
@@ -77,13 +77,13 @@ SLPFile.prototype.parseHeader = function () {
   this.numFrames = header.numFrames
   this.comment = header.comment
   this.frames = header.frames
-  
+
   this.bodyOffset = /* header */ 32 + /* frames */ 32 * header.numFrames
 }
 
 /**
  * Parses a frame.
- * @param {number} Frame ID.
+ * @param {number} id Frame ID.
  * @return {Object} Frame with added `.outlines` and `.commands` properties.
  */
 SLPFile.prototype.parseFrame = function (id) {
@@ -120,7 +120,7 @@ SLPFile.prototype.parseFrame = function (id) {
     cmd = buf[offset]
     lowNibble = cmd & 0x0f
     highNibble = cmd & 0xf0
-    lowBits = cmd & 0x03 // 00…0011
+    lowBits = cmd & 0x03 // 0b00…0011
     
     if (lowNibble === SLP_END_OF_ROW) {
       commands.push({ command: RENDER_NEXTLINE })
@@ -205,29 +205,39 @@ SLPFile.prototype.parseFrame = function (id) {
 }
 
 /**
+ * Get a parsed frame.
+ * @param {number} id Frame ID.
+ * @return {Object} Parsed frame object.
+ */
+SLPFile.prototype.getFrame = function (id) {
+  if (this.bodyOffset === null || !this.frames[id] || !this.frames[id].commands) {
+    this.parseFrame(id)
+  }
+  return this.frames[id]
+}
+
+/**
  * Renders a frame to a PNG buffer.
  * @param {number} frameIdx Frame ID.
  * @param {number} player Player colour (1-8) to use for player-specific parts. Defaults to 1 (blue).
  * @param {PaletteFile} palette A Palette file that contains the colours for this SLP.
  * @param {boolean} drawOutline Whether to draw an outline (used when units are behind buildings, etc). Defaults to false.
+ * @return {Object} Object containing Buffer of r,g,b,a values.
  */
 SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline) {
-  if (this.bodyOffset === null || !this.frames[frameIdx].commands) {
-    this.parseFrame(frameIdx)
-  }
-  var frame = this.frames[frameIdx]
+  var frame = this.getFrame(frameIdx)
     , outlines = frame.outlines
     , png = new Buffer(frame.width * frame.height * 4)
     , idx = 0
     , i
     , color
     , y = 0
-  
+
   if (arguments.length < 3) {
     palette = player
     player = 1
   }
-  
+
   var pushColor = function (col, opac) {
     png[idx++] = col[0]
     png[idx++] = col[1]
@@ -235,9 +245,14 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
     png[idx++] = opac
   }
 
-  png.fill(255, 0, outlines[0].left * 4)
-  idx = outlines[0].left * 4
-  
+  var skip = outlines[0].left
+  if (skip < 0) {
+    skip = frame.width
+  }
+  png.fill(255, 0, skip * 4)
+  idx = skip * 4
+
+  var log = []
   frame.commands.forEach(function (c) {
     switch (c.command) {
     case RENDER_SKIP:
@@ -250,9 +265,14 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
       idx += outlines[y].right * 4
       y++
       if (y < frame.height) {
+        // transparent lines are stored as a negative outline
+        skip = outlines[y].left
+        if (skip < 0) {
+          skip = frame.width
+        }
         // fill the start of this line until the first pixel
-        png.fill(255, idx, idx + outlines[y].left * 4)
-        idx += outlines[y].left * 4
+        png.fill(255, idx, idx + skip * 4)
+        idx += skip * 4
       }
       break
     case RENDER_COLOR:
@@ -280,6 +300,6 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
       break
     }
   })
-  
-  return new PNG(png, frame.width, frame.height, 'rgba')
+
+  return { buf: png, width: frame.width, height: frame.height }
 }

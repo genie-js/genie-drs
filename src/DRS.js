@@ -7,12 +7,22 @@ var fs = require('fs')
 
 module.exports = DRS
 
-const merge = function (base, obj) {
+var HEADER_SIZE = 64
+  , TABLE_META_SIZE = 12
+  , FILE_META_SIZE = 12
+
+var unknownByteMap = {
+  bin: 0x61
+, slp: 0x20
+, wav: 0x20
+}
+
+var merge = function (base, obj) {
   Object.keys(obj).forEach(function (key) {
     base[key] = obj[key]
   })
 }
-const reverse = function (str) { return str.split('').reverse().join('') }
+var reverse = function (str) { return str.split('').reverse().join('') }
 
 var headerStruct = Struct({
   copyright: Struct.char(40)
@@ -42,6 +52,15 @@ function DRS(file) {
   this.fd = null
 }
 
+DRS.File = DRSFile
+DRS.SLPFile = SLPFile
+DRS.WAVFile = WAVFile
+DRS.PaletteFile = PaletteFile
+
+DRS.prototype.getFileCount = function () {
+  return this.tables.reduce(function (a, t) { return a + t.files.length }, 0)
+}
+
 /**
  * Computes the size of this DRS file.
  * DRS consists of a 64 byte header, an array of 12 byte table infos,
@@ -49,9 +68,9 @@ function DRS(file) {
  * @return {number} The size of this DRS file.
  */
 DRS.prototype.getSize = function () {
-  return /* header */ 64 + /* tableInfo */ 12 * this.tables.length +
-         /* tables */ 12 * this.tables.reduce(function (a, t) { return a + t.files.length }, 0) +
-         /* files  */ this.getFiles().reduce(function (size, file) { return size + file.size }, 0)
+  return HEADER_SIZE + TABLE_META_SIZE * this.tables.length +
+         FILE_META_SIZE * this.getFileCount() +
+         this.getFiles().reduce(function (size, file) { return size + file.size }, 0)
 }
 
 /**
@@ -86,7 +105,7 @@ DRS.prototype.read = function (cb) {
   var fileOffset = 0
 
   // header is 64 bytes
-  fs.read(fd, new Buffer(64), 0, 64, 0, onHeader)
+  fs.read(fd, new Buffer(HEADER_SIZE), 0, HEADER_SIZE, 0, onHeader)
 
   function onHeader(err, bytesRead, buf) {
     if (err) return cb(err)
@@ -94,7 +113,7 @@ DRS.prototype.read = function (cb) {
     merge(drs, headerStruct(buf.slice(fileOffset)))
 
     fileOffset += buf.length
-    fs.read(fd, new Buffer(12 * drs.numTables), 0, 12 * drs.numTables, fileOffset, onTableInfo)
+    fs.read(fd, new Buffer(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
   }
 
   function onTableInfo(err, bytesRead, buf) {
@@ -122,7 +141,7 @@ DRS.prototype.read = function (cb) {
     }
 
     fileOffset += buf.length
-    fs.read(fd, new Buffer(12 * totalFiles), 0, 12 * totalFiles, fileOffset, onTables)
+    fs.read(fd, new Buffer(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
   }
 
   function onTables(err, bytesRead, buf) {
@@ -228,18 +247,17 @@ DRS.prototype.getFiles = function () {
  * @return {Object=} Appropriate file entry.
  */
 DRS.prototype.getFile = function (id) {
-  var i = 0
-    , l = this.tables.length
-    , j
-    , m
+  var tableI = 0
+    , tableL = this.tables.length
+    , fileI, fileL
     , table
-  for (; i < l; i++) {
-    table = this.tables[i]
-    j = 0
-    m = table.numFiles
-    for (; j < m; j++) {
-      if (table.files[j].id === id) {
-        return table.files[j]
+  for (; tableI < tableL; tableI++) {
+    table = this.tables[tableI]
+    fileI = 0
+    fileL = table.numFiles
+    for (; fileI < fileL; fileI++) {
+      if (table.files[fileI].id === id) {
+        return table.files[fileI]
       }
     }
   }
@@ -281,7 +299,8 @@ DRS.prototype.readFile = function (id, cb) {
       else drs.readFile(id, cb)
     })
   }
-  
+
+  // this file was changed (putFile()d, createFile()d) so we have it cached
   if (this.files[id]) {
     return setTimeout(function () {
       cb(null, this.files[id])
@@ -323,6 +342,39 @@ DRS.prototype.computeOffsets = function () {
       offset += file.size
     })
   })
+}
+
+DRS.prototype.buildTables = function () {
+  var tableMap = {}
+    , tables = []
+    , table
+    , files = this.getFiles()
+
+  Object.keys(this.files).forEach(function (id) {
+    files.push(this.files[id].file)
+  }, this)
+
+  files.forEach(function (file) {
+    table = tableMap[file.type]
+    if (!table) {
+      table = { unknownByte: unknownByteMap[file.type], ext: file.type, offset: 0, numFiles: 0 }
+      tableMap[file.type] = table
+      tables.push(table)
+    }
+    table.numFiles++
+  })
+  var offset = HEADER_SIZE + TABLE_META_SIZE * tables.length
+  Object.keys(tableMap).forEach(function (ext) {
+    tableMap[ext].offset = offset
+    offset += FILE_META_SIZE * tableMap[ext].numFiles
+  })
+
+  this.tables = tables
+}
+
+DRS.prototype.buildHeader = function () {
+  this.numTables = this.tables.length
+  this.firstFileOffset = HEADER + TABLE_META_SIZE * this.numTables + FILE_META_SIZE * this.getFileCount()
 }
 
 /**
