@@ -6,6 +6,8 @@ module.exports = DRSFile
  * @param {Object} file File table entry.
  */
 function DRSFile(buf, file) {
+  if (!(this instanceof DRSFile)) return new DRSFile(buf, file)
+
   this.file = file
   this.buf = buf
 }

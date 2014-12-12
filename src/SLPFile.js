@@ -34,7 +34,7 @@ var headerStruct = Struct({
   version: Struct.char(4)
 , numFrames: 'int32'
 , comment: Struct.char(24)
-  
+
 , frames: Struct.array('numFrames', Struct({
     cmdTableOffset: 'uint32'
   , outlineTableOffset: 'uint32'
@@ -57,6 +57,7 @@ var headerStruct = Struct({
  */
 function SLPFile(buf, file) {
   if (!(this instanceof SLPFile)) return new SLPFile(buf, file)
+
   DRSFile.call(this, buf, file)
   this.frames = []
   this.bodyOffset = null
@@ -91,7 +92,7 @@ SLPFile.prototype.parseFrame = function (id) {
   if (this.bodyOffset === null) {
     this.parseHeader()
   }
-  
+
   var frame = this.frames[id]
     , offset = frame.outlineTableOffset
     , height = frame.height
@@ -102,7 +103,7 @@ SLPFile.prototype.parseFrame = function (id) {
     , outlines = []
 
   var orNext = function (x) { return x ? x : buf[++offset] }
-  
+
   for (i = 0; i < height; i++) {
     left = buf.readInt16LE(offset)
     right = buf.readInt16LE(offset + 2)
@@ -115,13 +116,13 @@ SLPFile.prototype.parseFrame = function (id) {
     , cmd
     , commands = []
     , pxCount
-  
+
   while (y < height) {
     cmd = buf[offset]
     lowNibble = cmd & 0x0f
     highNibble = cmd & 0xf0
     lowBits = cmd & 0x03 // 0b00…0011
-    
+
     if (lowNibble === SLP_END_OF_ROW) {
       commands.push({ command: RENDER_NEXTLINE })
       y++
@@ -198,7 +199,7 @@ SLPFile.prototype.parseFrame = function (id) {
     }
     offset++
   }
-  
+
   frame.outlines = outlines
   frame.commands = commands
   return frame

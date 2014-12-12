@@ -6,8 +6,8 @@ Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS 
 
 ```javascript
 // using Age of Empires 2 files
-var int = new DRS('interfac.drs')
-  , gra = new DRS('graphics.drs')
+var int = DRS('interfac.drs')
+  , gra = DRS('graphics.drs')
 // id 50500 is the main in-game palette.
 int.readFile(50500, function (e, palette) {
   int.close()
@@ -22,7 +22,7 @@ int.readFile(50500, function (e, palette) {
 
 ## API
 
-### new DRS(filename)
+### DRS(filename)
 
 Creates a new DRS reader instance for the .DRS file `filename`.
 

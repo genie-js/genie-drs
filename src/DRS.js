@@ -45,6 +45,8 @@ var tableStruct = Struct({
  * @param {string} file Path to a .DRS file.
  */
 function DRS(file) {
+  if (!(this instanceof DRS)) return new DRS(file)
+
   this.files = {}
   this.newOffset = {}
   this.tables = []

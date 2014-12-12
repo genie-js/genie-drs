@@ -1,5 +1,5 @@
 { "name": "genie-drs"
-, "version": "0.1.0"
+, "version": "0.2.0"
 , "license": "MIT"
 , "keywords": [ "drs", "genie", "age of empires" ]
 , "bugs": "https://github.com/goto-bus-stop/node-genie-drs/issues"

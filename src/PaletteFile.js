@@ -3,6 +3,8 @@ var DRSFile = require('./DRSFile')
 module.exports = PaletteFile
 
 function PaletteFile(buf, file) {
+  if (!(this instanceof PaletteFile)) return new PaletteFile(buf, file)
+
   DRSFile.call(this, buf, file)
   this.colors = []
   this.numColors = null
