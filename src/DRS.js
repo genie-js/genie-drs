@@ -101,7 +101,7 @@ DRS.prototype.read = function (cb) {
       else drs.read(cb)
     })
   }
-  
+
   var fileOffset = 0
 
   // header is 64 bytes
@@ -357,12 +357,14 @@ DRS.prototype.buildTables = function () {
   files.forEach(function (file) {
     table = tableMap[file.type]
     if (!table) {
-      table = { unknownByte: unknownByteMap[file.type], ext: file.type, offset: 0, numFiles: 0 }
+      table = { unknownByte: unknownByteMap[file.type], ext: file.type, offset: 0, numFiles: 0, files: [] }
       tableMap[file.type] = table
       tables.push(table)
     }
     table.numFiles++
+    table.files.push(file)
   })
+
   var offset = HEADER_SIZE + TABLE_META_SIZE * tables.length
   Object.keys(tableMap).forEach(function (ext) {
     tableMap[ext].offset = offset

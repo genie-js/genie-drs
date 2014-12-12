@@ -28,7 +28,7 @@ PaletteFile.prototype.parse = function () {
     , str = this.buf.toString('ascii')
     , lines = str.split('\n')
     , i
-  
+
   // lines[0] == "JASC-PAL\n"
   // lines[1] == "0100"
   this.numColors = parseInt(lines[2], 10)
