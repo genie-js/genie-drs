@@ -218,7 +218,7 @@ SLPFile.prototype.getFrame = function (id) {
 }
 
 /**
- * Renders a frame to a PNG buffer.
+ * Renders a frame to a buffer.
  * @param {number} frameIdx Frame ID.
  * @param {number} player Player colour (1-8) to use for player-specific parts. Defaults to 1 (blue).
  * @param {PaletteFile} palette A Palette file that contains the colours for this SLP.
@@ -228,7 +228,7 @@ SLPFile.prototype.getFrame = function (id) {
 SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline) {
   var frame = this.getFrame(frameIdx)
     , outlines = frame.outlines
-    , png = new Buffer(frame.width * frame.height * 4)
+    , pixels = new Buffer(frame.width * frame.height * 4)
     , idx = 0
     , i
     , color
@@ -240,29 +240,29 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
   }
 
   var pushColor = function (col, opac) {
-    png[idx++] = col[0]
-    png[idx++] = col[1]
-    png[idx++] = col[2]
-    png[idx++] = opac
+    pixels[idx++] = col[0]
+    pixels[idx++] = col[1]
+    pixels[idx++] = col[2]
+    pixels[idx++] = opac
   }
 
   var skip = outlines[0].left
   if (skip < 0) {
     skip = frame.width
   }
-  png.fill(255, 0, skip * 4)
+  pixels.fill(255, 0, skip * 4)
   idx = skip * 4
 
   var log = []
   frame.commands.forEach(function (c) {
     switch (c.command) {
     case RENDER_SKIP:
-      png.fill(255, idx, idx + c.arg * 4)
+      pixels.fill(255, idx, idx + c.arg * 4)
       idx += c.arg * 4
       break
     case RENDER_NEXTLINE:
       // fill up the rest of this line
-      png.fill(255, idx, idx + outlines[y].right * 4)
+      pixels.fill(255, idx, idx + outlines[y].right * 4)
       idx += outlines[y].right * 4
       y++
       if (y < frame.height) {
@@ -272,7 +272,7 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
           skip = frame.width
         }
         // fill the start of this line until the first pixel
-        png.fill(255, idx, idx + skip * 4)
+        pixels.fill(255, idx, idx + skip * 4)
         idx += skip * 4
       }
       break
@@ -302,5 +302,5 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
     }
   })
 
-  return { buf: png, width: frame.width, height: frame.height }
+  return { buf: pixels, width: frame.width, height: frame.height }
 }
