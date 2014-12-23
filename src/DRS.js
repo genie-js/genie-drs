@@ -123,26 +123,13 @@ DRS.prototype.read = function (cb) {
   function onTableInfo(err, bytesRead, buf) {
     if (err) return cb(err)
 
-    var offset = 0
-      , table
-      , i
-      , totalFiles = 0
-    for (i = 0; i < drs.numTables; i++) {
-      table = tableStruct(buf.slice(offset))//{ files: [] }
-      table.files = []
-      // skip 1st byte
-      //table.unknownByte = buf.readUInt8(offset)
-      offset += 1
-      // reversed file ext
-      //table.ext = buf.slice(offset, offset + 3).toString().split('').reverse().join('')
-      offset += 3
-      //table.offset = buf.readInt32LE(offset)
-      offset += 4
-      //table.numFiles = buf.readInt32LE(offset)
-      totalFiles += table.numFiles
-      offset += 4
-      drs.tables.push(table)
-    }
+    // Tables reader
+    var tables = t.array(drs.numTables, tableStruct.transform(function (tab) { tab.files = []; return tab }))
+
+    drs.tables = tables(buf)
+    var totalFiles = drs.tables.reduce(function (total, table) {
+      return total + table.numFiles
+    }, 0)
 
     fileOffset += buf.length
     fs.read(fd, new Buffer(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
