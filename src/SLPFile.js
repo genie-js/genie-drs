@@ -1,6 +1,8 @@
 var DRSFile = require('./DRSFile')
   , Struct = require('awestruct')
 
+var t = Struct.types
+
 module.exports = SLPFile
 
 // SLP commands
@@ -31,21 +33,21 @@ var RENDER_NEXTLINE = 0x00
 
 // SLP Header
 var headerStruct = Struct({
-  version: Struct.char(4)
-, numFrames: 'int32'
-, comment: Struct.char(24)
+  version: t.char(4)
+, numFrames: t.int32
+, comment: t.char(24)
 
-, frames: Struct.array('numFrames', Struct({
-    cmdTableOffset: 'uint32'
-  , outlineTableOffset: 'uint32'
-  , paletteOffset: 'uint32'
-  , properties: 'uint32'
+, frames: t.array('numFrames', Struct({
+    cmdTableOffset: t.uint32
+  , outlineTableOffset: t.uint32
+  , paletteOffset: t.uint32
+  , properties: t.uint32
 
-  , width: 'int32'
-  , height: 'int32'
+  , width: t.int32
+  , height: t.int32
   , hotspot: Struct({
-      x: 'int32'
-    , y: 'int32'
+      x: t.int32
+    , y: t.int32
     })
   }))
 })

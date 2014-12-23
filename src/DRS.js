@@ -5,6 +5,8 @@ var fs = require('fs')
   , WAVFile = require('./WAVFile')
   , Struct = require('awestruct')
 
+var t = Struct.types
+
 module.exports = DRS
 
 var HEADER_SIZE = 64
@@ -25,18 +27,18 @@ var merge = function (base, obj) {
 var reverse = function (str) { return str.split('').reverse().join('') }
 
 var headerStruct = Struct({
-  copyright: Struct.char(40)
-, fileVersion: Struct.char(4)
-, fileType: Struct.char(12)
-, numTables: 'int32'
-, firstFileOffset: 'int32'
+  copyright: t.char(40)
+, fileVersion: t.char(4)
+, fileType: t.char(12)
+, numTables: t.int32
+, firstFileOffset: t.int32
 })
 
 var tableStruct = Struct({
-  unknownByte: 'uint8'
-, ext: Struct.char(3).transform(reverse)
-, offset: 'int32'
-, numFiles: 'int32'
+  unknownByte: t.uint8
+, ext: t.char(3).transform(reverse)
+, offset: t.int32
+, numFiles: t.int32
 })
 
 /**
