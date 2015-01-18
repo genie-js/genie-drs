@@ -160,69 +160,6 @@ DRS.prototype.read = function (cb) {
 }
 
 /**
- * Writes the DRS file to a buffer.
- * @param {function} cb Function to call when done. Error in first parameter, buffer in second.
- */
-DRS.prototype.write = function (buf, cb) {
-  var offset = 0
-    , files = this.getFiles()
-    , drs = this
-
-  this.computeOffsets()
-
-  // header
-  buf.write(this.copyright, offset, 40)
-  offset += 40
-  buf.write(this.fileVersion, offset, 4)
-  offset += 4
-  buf.write(this.fileType, offset, 12)
-  offset += 12
-  buf.writeInt32LE(this.tables.length, offset)
-  offset += 4
-  buf.writeInt32LE(this.firstFileOffset, offset)
-  offset += 4
-
-  this.tables.forEach(function (table) {
-    buf.writeUInt8(table.unknownByte, offset)
-    offset += 1
-    buf.write(table.ext.split('').reverse().join(''), offset, 3, 'ascii')
-    offset += 3
-    buf.writeInt32LE(table.offset, offset)
-    offset += 4
-    buf.writeInt32LE(table.numFiles, offset)
-    offset += 4
-  })
-
-  this.tables.forEach(function (table) {
-    table.files.forEach(function (file) {
-      buf.writeInt32LE(file.id, offset)
-      offset += 4
-      buf.writeInt32LE(drs.newOffset[file.id], offset)
-      offset += 4
-      buf.writeInt32LE(file.size, offset)
-      offset += 4
-    })
-  })
-
-  // TODO copy unedited subsequent files all at once
-  function nextFile(i) {
-    var fileMeta = files[i]
-    drs.readFile(fileMeta.id, function (e, file) {
-      if (e) return cb(e)
-      file.buf.copy(buf, drs.newOffset[fileMeta.id])
-      offset += fileMeta.size
-      if (i + 1 < files.length) {
-        nextFile(i + 1)
-      }
-      else {
-        cb(null, buf)
-      }
-    })
-  }
-  nextFile(0)
-}
-
-/**
  * Returns all the table entries in the DRS file.
  * @return {Array}
  */
@@ -256,27 +193,6 @@ DRS.prototype.getFile = function (id) {
 }
 
 /**
- * Replaces a file entry's contents in the DRS body.
- * File offsets are not recomputed by default.
- * If you need the offsets in the resulting DRS, call `.computeOffsets()`
- * first.
- * @param {number} id File ID.
- * @param {String|Buffer|Array} cont New contents.
- * @param {function} cb Function `(err, file)` to call when finished. `file` is a `DRSFile` object.
- */
-DRS.prototype.putFile = function (id, cont, cb) {
-  var fileMeta = this.getFile(id)
-  this.readFile(id, function (e, file) {
-    if (e) return cb(e)
-    var buf = Buffer.isBuffer(cont) ? cont : new Buffer(cont)
-    file.buf = buf
-    fileMeta.size = buf.length
-    this.files[id] = file
-    cb(null, file)
-  }.bind(this))
-}
-
-/**
  * Reads a file's content from the DRS by id.
  * @param {number} id File ID.
  * @param {function} cb Function `(err, file)` to call when finished. `file` is a `DRSFile` object.
@@ -291,12 +207,6 @@ DRS.prototype.readFile = function (id, cb) {
     })
   }
 
-  // this file was changed (putFile()d, createFile()d) so we have it cached
-  if (this.files[id]) {
-    return setTimeout(function () {
-      cb(null, this.files[id])
-    }.bind(this), 1)
-  }
   var file = this.getFile(id)
   if (file == null) return cb(new Error('Cannot find file #' + id))
   fs.read(this.fd, new Buffer(file.size), 0, file.size, file.offset, function (e, bytesRead, buf) {
@@ -316,58 +226,6 @@ DRS.prototype.readFile = function (id, cb) {
     }
     cb(null, fileInst)
   }.bind(this))
-}
-
-/**
- * Recomputes file offsets. New offsets will be in `.newOffset[fileId] == fileOffset`.
- * (This will change.)
- */
-DRS.prototype.computeOffsets = function () {
-  var offset = /* header */ 64 + /* tableInfo */ 12 * this.tables.length +
-               /* tables */ 12 * this.tables.reduce(function (a, t) { return a + t.files.length }, 0)
-    , drs = this
-  this.tables.forEach(function (table) {
-    // TODO also recompute table offset if new files were added
-    table.files.forEach(function (file) {
-      drs.newOffset[file.id] = offset
-      offset += file.size
-    })
-  })
-}
-
-DRS.prototype.buildTables = function () {
-  var tableMap = {}
-    , tables = []
-    , table
-    , files = this.getFiles()
-
-  Object.keys(this.files).forEach(function (id) {
-    files.push(this.files[id].file)
-  }, this)
-
-  files.forEach(function (file) {
-    table = tableMap[file.type]
-    if (!table) {
-      table = { unknownByte: unknownByteMap[file.type], ext: file.type, offset: 0, numFiles: 0, files: [] }
-      tableMap[file.type] = table
-      tables.push(table)
-    }
-    table.numFiles++
-    table.files.push(file)
-  })
-
-  var offset = HEADER_SIZE + TABLE_META_SIZE * tables.length
-  Object.keys(tableMap).forEach(function (ext) {
-    tableMap[ext].offset = offset
-    offset += FILE_META_SIZE * tableMap[ext].numFiles
-  })
-
-  this.tables = tables
-}
-
-DRS.prototype.buildHeader = function () {
-  this.numTables = this.tables.length
-  this.firstFileOffset = HEADER + TABLE_META_SIZE * this.numTables + FILE_META_SIZE * this.getFileCount()
 }
 
 /**
