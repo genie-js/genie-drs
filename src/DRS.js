@@ -193,6 +193,24 @@ DRS.prototype.getFile = function (id) {
 }
 
 /**
+ * Create a read stream for a file in the DRS.
+ *
+ * @param {number} id File ID.
+ *
+ * @return {Readable} A Readable stream or null if the file does not exist.
+ */
+DRS.prototype.createReadStream = function (id) {
+  var file = this.getFile(id)
+  if (file) {
+    return fs.createReadStream(this.filename, { fd: this.fd
+                                              , start: file.offset
+                                              , end: file.offset + file.size - 1
+                                              , autoClose: false })
+  }
+  return null
+}
+
+/**
  * Reads a file's content from the DRS by id.
  * @param {number} id File ID.
  * @param {function} cb Function `(err, file)` to call when finished. `file` is a `DRSFile` object.
