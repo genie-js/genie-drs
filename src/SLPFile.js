@@ -290,11 +290,11 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
       pushColor([ 0, 0, 0 ], drawOutline ? 0 : 255)
       break
     case RENDER_PLAYER_COLOR:
-      pushColor(palette.getPlayerColor(c.arg, player), 0)
+      pushColor(getPlayerColor(palette, c.arg, player), 0)
       break
     case RENDER_PLAYER_FILL:
       i = c.arg.pxCount
-      color = palette.getPlayerColor(c.arg.color, player)
+      color = getPlayerColor(palette, c.arg.color, player)
       while (i--) pushColor(color, 0)
       break
     case RENDER_SHADOW:
@@ -306,3 +306,5 @@ SLPFile.prototype.renderFrame = function (frameIdx, player, palette, drawOutline
 
   return { buf: pixels, width: frame.width, height: frame.height }
 }
+
+function getPlayerColor(palette, idx, player) { return palette.getColor(idx + 16 * player) }
