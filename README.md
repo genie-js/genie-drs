@@ -2,6 +2,8 @@
 
 Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS file reader/writer in Node.js
 
+[![NPM](https://nodei.co/npm/genie-drs.png?compact=true)](https://nodei.co/npm/genie-drs)
+
 ## Usage Example
 
 ```javascript
@@ -69,20 +71,17 @@ Renders a frame to a PNG buffer.  `frameId` is the id of the frame to render.  `
 
 ### PaletteFile
 
-Represents a .BIN Paint Shop Pro palette file in a .DRS archive.
+Represents a .BIN Paint Shop Pro palette file in a .DRS archive. Palette files use
+[jascpal](https://github.com/goto-bus-stop/jascpal) for parsing.
+
+#### PaletteFile#palette
+
+Jascpal instance.
 
 #### PaletteFile#getColor(idx)
 
 Returns the `[r, g, b]` colour at index `idx`.
 
-#### PaletteFile#getPlayerColor(idx, playerId)
-
-Returns the `[r, g, b]` colour at index `idx` for player (1-8) `playerId`.
-
 #### PaletteFile#setColor(idx, color)
 
 Sets the colour at index `idx` to the specified `[r, g, b]` array `color`.
-
-#### PaletteFile#setPlayerColor(idx, playerId, color)
-
-Sets the colour at index `idx` for player (1-8) `playerId` to the specified `[r, g, b]` array `color`.
