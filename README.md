@@ -63,11 +63,15 @@ Reads a file's contents for ID `id`.  The callback gets an `err` and a `DRSFile`
 
 ### SLPFile
 
-Represents a .SLP file in a .DRS archive.
+Represents a .SLP graphics file in a .DRS archive. Uses [genie-slp](https://github.com/goto-bus-stop/genie-slp) for parsing and rendering.
 
-#### SLPFile#renderFrame(frameId, playerId, palette, callback)
+#### SLPFile#slp
 
-Renders a frame to a PNG buffer.  `frameId` is the id of the frame to render.  `playerId` (1-8) is the player colour to use.  `palette` is a `PaletteFile` containing the palette to use.  `callback` gets an `err`, and a [`Png` instance](https://github.com/pkrumins/node-png)
+Genie-slp instance.
+
+#### SLPFile#renderFrame(frameId, palette, opts)
+
+Renders a frame to a PNG buffer. `frameId` is the frame to render, `palette` is the Palette to use (either an array of colours, a jascpal instance, or a `PaletteFile`), `opts` are [genie-slp](https://github.com/goto-bus-stop/genie-slp#slprenderframeframeindex--palette-player----buffer-width-height-) options.
 
 ### PaletteFile
 

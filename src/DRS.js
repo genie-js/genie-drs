@@ -4,6 +4,7 @@ var fs = require('fs')
   , SLPFile = require('./SLPFile')
   , WAVFile = require('./WAVFile')
   , Struct = require('awestruct')
+  , assign = Object.assign || require('object-assign')
 
 var t = Struct.types
 
@@ -19,11 +20,6 @@ var unknownByteMap = {
 , wav: 0x20
 }
 
-var merge = function (base, obj) {
-  Object.keys(obj).forEach(function (key) {
-    base[key] = obj[key]
-  })
-}
 var reverse = function (str) { return str.split('').reverse().join('') }
 
 var headerStruct = Struct({
@@ -114,7 +110,7 @@ DRS.prototype.read = function (cb) {
   function onHeader(err, bytesRead, buf) {
     if (err) return cb(err)
 
-    merge(drs, headerStruct(buf.slice(fileOffset)))
+    assign(drs, headerStruct(buf.slice(fileOffset)))
 
     fileOffset += buf.length
     fs.read(fd, new Buffer(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
