@@ -7,6 +7,7 @@ Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS 
 ## Usage Example
 
 ```javascript
+var Png = require('png').Png
 // using Age of Empires 2 files
 var int = DRS('interfac.drs')
   , gra = DRS('graphics.drs')
@@ -15,9 +16,9 @@ int.readFile(50500, function (e, palette) {
   int.close()
   // 3088 is the 'Champion Dying' graphic.
   gra.readFile(3088, function (e, slp) {
-    slp.renderFrame(1, 1, palette, false).encode(function (buf) {
-      fs.writeFile('champion-dying.png', buf)
-    })
+    var frame = slp.renderFrame(1, palette, { player: 1, drawOutline: false })
+      , png = new Png(frame.buffer, frame.width, frame.height, 'rgba')
+    fs.writeFile('champion-dying.png', png.encode())
   })
 })
 ```
