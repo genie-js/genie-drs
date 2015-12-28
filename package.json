@@ -7,8 +7,8 @@
 , "author": "goto-bus-stop <rene@kooi.me>"
 , "main": "src/DRS"
 , "dependencies":
-  { "awestruct": "^0.8.0"
-  , "jascpal": "0.x"
-  , "genie-slp": "0.x"
-  , "object-assign": "2.x" }
+  { "awestruct": "^0.10.0"
+  , "jascpal": "^0.1.2"
+  , "genie-slp": "^0.7.1"
+  , "object-assign": "^4.0.1" }
 }
