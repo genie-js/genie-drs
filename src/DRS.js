@@ -10,9 +10,12 @@ var t = Struct.types
 
 module.exports = DRS
 
-var HEADER_SIZE = 64
+var HEADER_SIZE_AOE = 64
+  , HEADER_SIZE_SWGB = 84
   , TABLE_META_SIZE = 12
   , FILE_META_SIZE = 12
+
+var COPYRIGHT_SWGB = 'Copyright (c) 2001 LucasArts Entertainment Company LLC'
 
 var unknownByteMap = {
   bin: 0x61
@@ -22,13 +25,15 @@ var unknownByteMap = {
 
 var reverse = function (str) { return str.split('').reverse().join('') }
 
-var headerStruct = Struct({
-  copyright: t.char(40)
-, fileVersion: t.char(4)
-, fileType: t.char(12)
-, numTables: t.int32
-, firstFileOffset: t.int32
-})
+var headerStruct = function (isSwgb) {
+  return Struct({
+    copyright: isSwgb ? t.char(60) : t.char(40)
+  , fileVersion: t.char(4)
+  , fileType: t.char(12)
+  , numTables: t.int32
+  , firstFileOffset: t.int32
+  })
+}
 
 var tableStruct = Struct({
   unknownByte: t.uint8
@@ -50,6 +55,7 @@ function DRS(file) {
   this.tables = []
   this.filename = file
   this.fd = null
+  this.isSWGB = null
 }
 
 DRS.File = DRSFile
@@ -105,12 +111,19 @@ DRS.prototype.read = function (cb) {
   var fileOffset = 0
 
   // header is 64 bytes
-  fs.read(fd, new Buffer(HEADER_SIZE), 0, HEADER_SIZE, 0, onHeader)
+  fs.read(fd, new Buffer(HEADER_SIZE_SWGB), 0, HEADER_SIZE_SWGB, 0, onHeader)
 
   function onHeader(err, bytesRead, buf) {
     if (err) return cb(err)
 
-    assign(drs, headerStruct(buf.slice(fileOffset)))
+    drs.isSWGB = buf.slice(0, COPYRIGHT_SWGB.length).toString('ascii') === COPYRIGHT_SWGB
+
+    if (!drs.isSWGB) {
+      buf = buf.slice(0, HEADER_SIZE_AOE)
+    }
+
+    var readHeader = headerStruct(drs.isSWGB)
+    assign(drs, readHeader(buf.slice(fileOffset)))
 
     fileOffset += buf.length
     fs.read(fd, new Buffer(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
