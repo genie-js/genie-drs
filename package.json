@@ -12,7 +12,7 @@
   "author": "goto-bus-stop <rene@kooi.me>",
   "main": "src/DRS",
   "dependencies": {
-    "awestruct": "^0.11.1",
+    "awestruct": "^0.12.1",
     "jascpal": "^0.1.2",
     "genie-slp": "^0.7.1",
     "object-assign": "^4.0.1"
