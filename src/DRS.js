@@ -17,13 +17,22 @@ var HEADER_SIZE_AOE = 64
 
 var COPYRIGHT_SWGB = 'Copyright (c) 2001 LucasArts Entertainment Company LLC'
 
-var unknownByteMap = {
-  bin: 0x61
-, slp: 0x20
-, wav: 0x20
+// Parse a numeric table type to a string.
+var parseTableType = function (num) {
+  for (var ext = '', i = 0; i < 4; i++) {
+    ext = String.fromCharCode(num & 0xFF) + ext
+    num >>= 8
+  }
+  return ext
 }
 
-var reverse = function (str) { return str.split('').reverse().join('') }
+// Serialize a table type string to a 32-bit integer.
+var serializeTableType = function (str) {
+  for (var num = 0, i = 0; i < 4; i++) {
+    num = (num << 8) + str.charCodeAt(i)
+  }
+  return num
+}
 
 var headerStruct = function (isSwgb) {
   return Struct({
@@ -36,8 +45,7 @@ var headerStruct = function (isSwgb) {
 }
 
 var tableStruct = Struct({
-  unknownByte: t.uint8
-, ext: t.char(3).transform(reverse)
+  ext: t.uint32.map(parseTableType, serializeTableType)
 , offset: t.int32
 , numFiles: t.int32
 })
@@ -239,13 +247,13 @@ DRS.prototype.readFile = function (id, cb) {
   fs.read(this.fd, new Buffer(file.size), 0, file.size, file.offset, function (e, bytesRead, buf) {
     if (e) return cb(e)
     var fileInst
-    if (file.type === 'slp') {
+    if (file.type === 'slp ') {
       fileInst = new SLPFile(buf, file)
     }
-    else if (file.type === 'wav') {
+    else if (file.type === 'wav ') {
       fileInst = new WAVFile(buf, file)
     }
-    else if (file.type === 'bin' && buf.slice(0, 8).toString('ascii') === 'JASC-PAL') {
+    else if (file.type === 'bina' && buf.slice(0, 8).toString('ascii') === 'JASC-PAL') {
       fileInst = new PaletteFile(buf, file)
     }
     else {

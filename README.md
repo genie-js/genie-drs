@@ -42,7 +42,7 @@ Returns the size of the DRS file.  Includes any unsaved modifications.  Won't wo
 Returns an array of all the file entries in this DRS file.  Format:
 ```javascript
 { id: Number     // internal file ID
-, type: String   // type of file: wav, slp, bin
+, type: String   // 4-character, space-padded type of file: "wav ", "slp ", "bina"
 , size: Number   // file size in bytes
 , offset: Number // file offset in the main DRS, in bytes
 }
