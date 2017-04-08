@@ -3,6 +3,7 @@ var DRSFile = require('./DRSFile')
 var PaletteFile = require('./PaletteFile')
 var SLPFile = require('./SLPFile')
 var WAVFile = require('./WAVFile')
+var Buffer = require('safe-buffer').Buffer
 var Struct = require('awestruct')
 var assign = require('object-assign')
 
@@ -121,7 +122,7 @@ DRS.prototype.read = function (cb) {
   var fileOffset = 0
 
   // header is 64 bytes
-  fs.read(fd, new Buffer(HEADER_SIZE_SWGB), 0, HEADER_SIZE_SWGB, 0, onHeader)
+  fs.read(fd, Buffer.alloc(HEADER_SIZE_SWGB), 0, HEADER_SIZE_SWGB, 0, onHeader)
 
   function onHeader (err, bytesRead, buf) {
     if (err) return cb(err)
@@ -136,7 +137,7 @@ DRS.prototype.read = function (cb) {
     assign(drs, readHeader(buf.slice(fileOffset)))
 
     fileOffset += buf.length
-    fs.read(fd, new Buffer(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
+    fs.read(fd, Buffer.alloc(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
   }
 
   function onTableInfo (err, bytesRead, buf) {
@@ -151,7 +152,7 @@ DRS.prototype.read = function (cb) {
     }, 0)
 
     fileOffset += buf.length
-    fs.read(fd, new Buffer(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
+    fs.read(fd, Buffer.alloc(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
   }
 
   function onTables (err, bytesRead, buf) {
@@ -242,7 +243,7 @@ DRS.prototype.readFile = function (id, cb) {
 
   var file = this.getFile(id)
   if (file == null) return cb(new Error('Cannot find file #' + id))
-  fs.read(this.fd, new Buffer(file.size), 0, file.size, file.offset, function (e, bytesRead, buf) {
+  fs.read(this.fd, Buffer.alloc(file.size), 0, file.size, file.offset, function (e, bytesRead, buf) {
     if (e) return cb(e)
     var fileInst
     if (file.type === 'slp ') {
