@@ -82,7 +82,9 @@ DRS.prototype.getFileCount = function () {
  * @return {number} The size of this DRS file.
  */
 DRS.prototype.getSize = function () {
-  return HEADER_SIZE + TABLE_META_SIZE * this.tables.length +
+  var headerSize = this.isSWGB ? HEADER_SIZE_SWGB : HEADER_SIZE_AOE
+
+  return headerSize + TABLE_META_SIZE * this.tables.length +
          FILE_META_SIZE * this.getFileCount() +
          this.getFiles().reduce(function (size, file) { return size + file.size }, 0)
 }
