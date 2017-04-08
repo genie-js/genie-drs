@@ -1,19 +1,19 @@
 var fs = require('fs')
-  , DRSFile = require('./DRSFile')
-  , PaletteFile = require('./PaletteFile')
-  , SLPFile = require('./SLPFile')
-  , WAVFile = require('./WAVFile')
-  , Struct = require('awestruct')
-  , assign = Object.assign || require('object-assign')
+var DRSFile = require('./DRSFile')
+var PaletteFile = require('./PaletteFile')
+var SLPFile = require('./SLPFile')
+var WAVFile = require('./WAVFile')
+var Struct = require('awestruct')
+var assign = require('object-assign')
 
 var t = Struct.types
 
 module.exports = DRS
 
 var HEADER_SIZE_AOE = 64
-  , HEADER_SIZE_SWGB = 84
-  , TABLE_META_SIZE = 12
-  , FILE_META_SIZE = 12
+var HEADER_SIZE_SWGB = 84
+var TABLE_META_SIZE = 12
+var FILE_META_SIZE = 12
 
 var COPYRIGHT_SWGB = 'Copyright (c) 2001 LucasArts Entertainment Company LLC'
 
@@ -36,18 +36,18 @@ var serializeTableType = function (str) {
 
 var headerStruct = function (isSwgb) {
   return Struct({
-    copyright: isSwgb ? t.char(60) : t.char(40)
-  , fileVersion: t.char(4)
-  , fileType: t.char(12)
-  , numTables: t.int32
-  , firstFileOffset: t.int32
+    copyright: isSwgb ? t.char(60) : t.char(40),
+    fileVersion: t.char(4),
+    fileType: t.char(12),
+    numTables: t.int32,
+    firstFileOffset: t.int32
   })
 }
 
 var tableStruct = Struct({
-  ext: t.uint32.map(parseTableType, serializeTableType)
-, offset: t.int32
-, numFiles: t.int32
+  ext: t.uint32.map(parseTableType, serializeTableType),
+  offset: t.int32,
+  numFiles: t.int32
 })
 
 /**
@@ -55,7 +55,7 @@ var tableStruct = Struct({
  * @constructor
  * @param {string} file Path to a .DRS file.
  */
-function DRS(file) {
+function DRS (file) {
   if (!(this instanceof DRS)) return new DRS(file)
 
   this.files = {}
@@ -109,7 +109,7 @@ DRS.prototype.open = function (cb) {
  */
 DRS.prototype.read = function (cb) {
   var drs = this
-    , fd = this.fd
+  var fd = this.fd
   // make sure we have an open file first
   if (this.fd === null) {
     return this.open(function (e) {
@@ -123,7 +123,7 @@ DRS.prototype.read = function (cb) {
   // header is 64 bytes
   fs.read(fd, new Buffer(HEADER_SIZE_SWGB), 0, HEADER_SIZE_SWGB, 0, onHeader)
 
-  function onHeader(err, bytesRead, buf) {
+  function onHeader (err, bytesRead, buf) {
     if (err) return cb(err)
 
     drs.isSWGB = buf.slice(0, COPYRIGHT_SWGB.length).toString('ascii') === COPYRIGHT_SWGB
@@ -139,7 +139,7 @@ DRS.prototype.read = function (cb) {
     fs.read(fd, new Buffer(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
   }
 
-  function onTableInfo(err, bytesRead, buf) {
+  function onTableInfo (err, bytesRead, buf) {
     if (err) return cb(err)
 
     // Tables reader
@@ -154,13 +154,13 @@ DRS.prototype.read = function (cb) {
     fs.read(fd, new Buffer(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
   }
 
-  function onTables(err, bytesRead, buf) {
+  function onTables (err, bytesRead, buf) {
     if (err) return cb(err)
 
     var offset = 0
     drs.tables.forEach(function (table) {
-      var file, i, l
-      for (i = 0, l = table.numFiles; i < l; i++) {
+      var file
+      for (var i = 0, l = table.numFiles; i < l; i++) {
         file = {}
         file.id = buf.readInt32LE(offset)
         offset += 4
@@ -194,17 +194,11 @@ DRS.prototype.getFiles = function () {
  * @return {Object=} Appropriate file entry.
  */
 DRS.prototype.getFile = function (id) {
-  var tableI = 0
-    , tableL = this.tables.length
-    , fileI, fileL
-    , table
-  for (; tableI < tableL; tableI++) {
-    table = this.tables[tableI]
-    fileI = 0
-    fileL = table.numFiles
-    for (; fileI < fileL; fileI++) {
-      if (table.files[fileI].id === id) {
-        return table.files[fileI]
+  for (var tableI = 0; tableI < this.tables.length; tableI++) {
+    var table = this.tables[tableI]
+    for (var i = 0; i < table.numFiles; i++) {
+      if (table.files[i].id === id) {
+        return table.files[i]
       }
     }
   }
@@ -221,10 +215,12 @@ DRS.prototype.getFile = function (id) {
 DRS.prototype.createReadStream = function (id) {
   var file = this.getFile(id)
   if (file) {
-    return fs.createReadStream(this.filename, { fd: this.fd
-                                              , start: file.offset
-                                              , end: file.offset + file.size - 1
-                                              , autoClose: false })
+    return fs.createReadStream(this.filename, {
+      fd: this.fd,
+      start: file.offset,
+      end: file.offset + file.size - 1,
+      autoClose: false
+    })
   }
   return null
 }
@@ -251,18 +247,15 @@ DRS.prototype.readFile = function (id, cb) {
     var fileInst
     if (file.type === 'slp ') {
       fileInst = new SLPFile(buf, file)
-    }
-    else if (file.type === 'wav ') {
+    } else if (file.type === 'wav ') {
       fileInst = new WAVFile(buf, file)
-    }
-    else if (file.type === 'bina' && buf.slice(0, 8).toString('ascii') === 'JASC-PAL') {
+    } else if (file.type === 'bina' && buf.slice(0, 8).toString('ascii') === 'JASC-PAL') {
       fileInst = new PaletteFile(buf, file)
-    }
-    else {
+    } else {
       fileInst = new DRSFile(buf, file)
     }
     cb(null, fileInst)
-  }.bind(this))
+  })
 }
 
 /**

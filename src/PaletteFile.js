@@ -1,9 +1,9 @@
 var DRSFile = require('./DRSFile')
-  , Palette = require('jascpal')
+var Palette = require('jascpal')
 
 module.exports = PaletteFile
 
-function PaletteFile(buf, file) {
+function PaletteFile (buf, file) {
   if (!(this instanceof PaletteFile)) return new PaletteFile(buf, file)
 
   DRSFile.call(this, buf, file)

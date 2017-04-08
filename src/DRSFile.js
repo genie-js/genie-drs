@@ -5,7 +5,7 @@ module.exports = DRSFile
  * @param {Buffer} buf File contents.
  * @param {Object} file File table entry.
  */
-function DRSFile(buf, file) {
+function DRSFile (buf, file) {
   if (!(this instanceof DRSFile)) return new DRSFile(buf, file)
 
   this.file = file

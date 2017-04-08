@@ -1,9 +1,6 @@
 var DRSFile = require('./DRSFile')
-  , PaletteFile = require('./PaletteFile')
-  , Struct = require('awestruct')
-  , SLP = require('genie-slp')
-
-var t = Struct.types
+var PaletteFile = require('./PaletteFile')
+var SLP = require('genie-slp')
 
 module.exports = SLPFile
 
@@ -12,7 +9,7 @@ module.exports = SLPFile
  * @param {Object} file
  * @extends DRSFile
  */
-function SLPFile(buf, file) {
+function SLPFile (buf, file) {
   if (!(this instanceof SLPFile)) return new SLPFile(buf, file)
 
   DRSFile.call(this, buf, file)
