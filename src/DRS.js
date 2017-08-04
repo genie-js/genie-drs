@@ -119,7 +119,6 @@ function getFirstFileOffset (drs) {
  * @return {number} The size of this DRS file.
  */
 DRS.prototype.getSize = function () {
-
   return getFirstFileOffset(this) +
          this.getFiles().reduce(function (size, file) { return size + file.size }, 0)
 }
@@ -357,8 +356,18 @@ function createFileBufferCallback (file, table, cb) {
     file.buffer = buffer
     file.size = buffer.byteLength
 
-    table.files.push(file)
-    table.numFiles = table.files.length
+    var replaced = false
+    for (var i = 0; i < table.numFiles; i++) {
+      if (table.files[i].id === file.id) {
+        table.files[i] = file
+        replaced = true
+        break
+      }
+    }
+    if (!replaced) {
+      table.files.push(file)
+      table.numFiles = table.files.length
+    }
 
     cb(null, file)
   }
