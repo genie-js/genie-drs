@@ -8,6 +8,7 @@ var isBuffer = require('is-buffer')
 var Struct = require('awestruct')
 var assign = require('object-assign')
 var to = require('to2')
+var multistream = require('multistream')
 var DRSFile = require('./DRSFile')
 var PaletteFile = require('./PaletteFile')
 var SLPFile = require('./SLPFile')
@@ -28,6 +29,7 @@ var HEADER_SIZE_SWGB = 84
 var TABLE_META_SIZE = 12
 var FILE_META_SIZE = 12
 
+var COPYRIGHT_AOE = 'Copyright (c) 1997 Ensemble Studios.\0\0\0\0'
 var COPYRIGHT_SWGB = 'Copyright (c) 2001 LucasArts Entertainment Company LLC'
 
 // Parse a numeric table type to a string.
@@ -74,9 +76,24 @@ function DRS (file) {
   this.files = {}
   this.newOffset = {}
   this.tables = []
-  this.filename = file
   this.fd = null
   this.isSWGB = null
+
+  if (typeof file === 'undefined') {
+    file = {}
+  }
+  if (typeof file === 'string') {
+    this.filename = file
+  } else {
+    if (typeof file !== 'object') {
+      throw new TypeError('Expected a file path string or an options object, got ' + typeof file)
+    }
+    this.isSWGB = file.hasOwnProperty('isSWGB') ? file.isSWGB : false
+    this.copyright = file.hasOwnProperty('copyright') ? file.copyright :
+      (this.isSWGB ? COPYRIGHT_SWGB : COPYRIGHT_AOE)
+    this.fileVersion = file.hasOwnProperty('fileVersion') ? file.fileVersion : '1.00'
+    this.fileType = file.hasOwnProperty('fileType') ? file.fileType : 'tribe\0\0\0\0\0\0\0'
+  }
 }
 
 DRS.File = DRSFile
@@ -88,6 +105,13 @@ DRS.prototype.getFileCount = function () {
   return this.tables.reduce(function (a, t) { return a + t.files.length }, 0)
 }
 
+function getFirstFileOffset (drs) {
+  var headerSize = drs.isSWGB ? HEADER_SIZE_SWGB : HEADER_SIZE_AOE
+
+  return headerSize + TABLE_META_SIZE * drs.tables.length +
+         FILE_META_SIZE * drs.getFileCount()
+}
+
 /**
  * Computes the size of this DRS file.
  * DRS consists of a 64 byte header, an array of 12 byte table infos,
@@ -95,10 +119,8 @@ DRS.prototype.getFileCount = function () {
  * @return {number} The size of this DRS file.
  */
 DRS.prototype.getSize = function () {
-  var headerSize = this.isSWGB ? HEADER_SIZE_SWGB : HEADER_SIZE_AOE
 
-  return headerSize + TABLE_META_SIZE * this.tables.length +
-         FILE_META_SIZE * this.getFileCount() +
+  return getFirstFileOffset(this) +
          this.getFiles().reduce(function (size, file) { return size + file.size }, 0)
 }
 
@@ -109,6 +131,9 @@ DRS.prototype.getSize = function () {
  *    Error in first argument, File Descriptor in second (if successful)
  */
 DRS.prototype.open = function (cb) {
+  if (!this.filename) {
+    throw new Error('Cannot open an in-memory DRS file')
+  }
   fs.open(this.filename, 'r', function (e, fd) {
     if (e) return cb(e)
     this.fd = fd
@@ -393,6 +418,57 @@ DRS.prototype.createWriteStream = function (type, id) {
   }
 
   return stream
+}
+
+DRS.prototype.archive = function () {
+  var drs = this
+  function getHeader () {
+    return fromBuffer(headerStruct(drs.isSwgb).encode({
+      copyright: drs.copyright,
+      fileVersion: drs.fileVersion,
+      fileType: drs.fileType,
+      numTables: drs.numTables,
+      firstFileOffset: getFirstFileOffset(drs)
+    }))
+  }
+
+  function getTableInfo () {
+    return fromBuffer(Buffer.concat(
+      drs.tables.map(function (table) {
+        return tableStruct.encode(table)
+      })
+    ))
+  }
+
+  var fileOffset = getFirstFileOffset(drs)
+  var tables = drs.tables.map(function (table) {
+    return function () {
+      var offset = 0
+      var buffer = Buffer.alloc(table.numFiles * FILE_META_SIZE)
+      for (var i = 0; i < table.numFiles; i++) {
+        var file = table.files[i]
+        buffer.writeInt32LE(file.id, offset)
+        offset += 4
+        buffer.writeInt32LE(fileOffset, offset)
+        offset += 4
+        buffer.writeInt32LE(file.size, offset)
+        fileOffset += file.size
+      }
+      return fromBuffer(buffer)
+    }
+  })
+
+  var files = drs.getFiles().map(function (file) {
+    return function () {
+      return drs.createReadStream(file.id)
+    }
+  })
+
+  var chunks = [ getHeader, getTableInfo ]
+    .concat(tables)
+    .concat(files)
+
+  return multistream(chunks)
 }
 
 /**
