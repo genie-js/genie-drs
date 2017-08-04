@@ -21,6 +21,7 @@
     "pump": "^1.0.2",
     "safe-buffer": "^5.0.1",
     "simple-concat": "^1.0.0",
-    "through2": "^2.0.3"
+    "through2": "^2.0.3",
+    "to2": "^1.0.0"
   }
 }

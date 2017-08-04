@@ -7,6 +7,7 @@ var fromBuffer = require('from2-buffer')
 var isBuffer = require('is-buffer')
 var Struct = require('awestruct')
 var assign = require('object-assign')
+var to = require('to2')
 var DRSFile = require('./DRSFile')
 var PaletteFile = require('./PaletteFile')
 var SLPFile = require('./SLPFile')
@@ -293,26 +294,10 @@ DRS.prototype.readFile = function (id, cb) {
   })
 }
 
-/**
- * Add a new file to the DRS archive.
- *
- * @param {string} type The file type, i.e. the table in which to store the file.
- *    If a file type is given for which a table does not exist, a new table is created.
- * @param {number} id The new file ID.
- * @param {Buffer|Stream} data File contents.
- * @param {function} cb Function `(err, file)` to call when finished.
- */
-DRS.prototype.putFile = function (type, id, data, cb) {
-  var file = {
-    id: id,
-    offset: null,
-    size: null,
-    type: type
-  }
-
+function getTable (drs, type) {
   var table
-  for (var i = 0; i < this.tables.length; i += 1) {
-    table = this.tables[i]
+  for (var i = 0; i < drs.tables.length; i += 1) {
+    table = drs.tables[i]
     if (table.ext === type) {
       break
     }
@@ -325,28 +310,89 @@ DRS.prototype.putFile = function (type, id, data, cb) {
       numFiles: 0,
       files: []
     }
-    this.tables.push(table)
-    this.numTables = this.tables.length
+    drs.tables.push(table)
+    drs.numTables = drs.tables.length
   }
 
-  if (isBuffer(data)) {
-    setTimeout(function () {
-      onbuffer(null, data)
-    }, 0)
-  }
-  if (isStream(data)) {
-    concat(data, onbuffer)
-  }
+  return table
+}
 
-  function onbuffer (err, buffer) {
+function newFile (type, id) {
+  return {
+    id: id,
+    offset: null,
+    size: null,
+    type: type
+  }
+}
+
+function createFileBufferCallback (file, table, cb) {
+  return function onbuffer (err, buffer) {
     if (err) return cb(err)
     file.buffer = buffer
+    file.size = buffer.byteLength
 
     table.files.push(file)
     table.numFiles = table.files.length
 
     cb(null, file)
   }
+}
+
+/**
+ * Add a new file to the DRS archive.
+ *
+ * @param {string} type The file type, i.e. the table in which to store the file.
+ *    If a file type is given for which a table does not exist, a new table is created.
+ * @param {number} id The new file ID.
+ * @param {Buffer|Stream} data File contents.
+ * @param {function} cb Function `(err, file)` to call when finished.
+ */
+DRS.prototype.putFile = function (type, id, data, cb) {
+  var file = newFile(type, id)
+  var table = getTable(this, type)
+
+  var onbuffer = createFileBufferCallback(file, table, cb)
+
+  if (isBuffer(data)) {
+    setTimeout(function () {
+      onbuffer(null, data)
+    }, 0)
+  } else if (isStream(data)) {
+    concat(data, onbuffer)
+  } else {
+    throw new TypeError('Expected a Buffer or a Stream, but got \'' + typeof data + '\'')
+  }
+}
+
+/**
+ * Add a new file to the DRS archive, returning a writable stream.
+ *
+ * @param {string} type The file type, i.e. the table in which to store the file.
+ *    If a file type is given for which a table does not exist, a new table is created.
+ * @param {number} id The new file ID.
+ * @param {function} cb Function `(err, file)` to call when finished.
+ */
+DRS.prototype.createWriteStream = function (type, id) {
+  var file = newFile(type, id)
+  var table = getTable(this, type)
+
+  var data = []
+  var cb = createFileBufferCallback(file, table, onfinish)
+  var stream = to(function (chunk, enc, next) {
+    data.push(chunk)
+    next()
+  }, function (next) {
+    cb(null, Buffer.concat(data))
+    next()
+  })
+
+  function onfinish (err, file) {
+    if (err) stream.emit('error', err)
+    else stream.emit('meta', file)
+  }
+
+  return stream
 }
 
 /**
