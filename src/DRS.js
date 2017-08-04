@@ -1,18 +1,26 @@
 var fs = require('fs')
-var stream = require('stream')
+var through = require('through2')
 var pump = require('pump')
+var concat = require('simple-concat')
+var Buffer = require('safe-buffer').Buffer
+var fromBuffer = require('from2-buffer')
+var isBuffer = require('is-buffer')
+var Struct = require('awestruct')
+var assign = require('object-assign')
 var DRSFile = require('./DRSFile')
 var PaletteFile = require('./PaletteFile')
 var SLPFile = require('./SLPFile')
 var WAVFile = require('./WAVFile')
-var Buffer = require('safe-buffer').Buffer
-var Struct = require('awestruct')
-var assign = require('object-assign')
 
 var t = Struct.types
-var PassThrough = stream.PassThrough
 
 module.exports = DRS
+
+function isStream (stream) {
+  return stream &&
+    typeof stream === 'object' &&
+    typeof stream.pipe === 'function'
+}
 
 var HEADER_SIZE_AOE = 64
 var HEADER_SIZE_SWGB = 84
@@ -219,7 +227,7 @@ DRS.prototype.getFile = function (id) {
 DRS.prototype.createReadStream = function (id) {
   var drs = this
 
-  var stream = new PassThrough()
+  var stream = through()
   if (!drs.numTables) {
     drs.read(onread)
   } else {
@@ -238,6 +246,10 @@ DRS.prototype.createReadStream = function (id) {
       stream.emit('error', new Error('File ' + id + ' does not exist'))
     }
     stream.emit('meta', file)
+    if (file.buffer) {
+      pump(fromBuffer(file.buffer), stream)
+      return
+    }
     pump(fs.createReadStream(drs.filename, {
       fd: drs.fd,
       start: file.offset,
@@ -249,6 +261,7 @@ DRS.prototype.createReadStream = function (id) {
 
 /**
  * Reads a file's content from the DRS by id.
+ *
  * @param {number} id File ID.
  * @param {function} cb Function `(err, file)` to call when finished. `file` is a `DRSFile` object.
  */
@@ -278,6 +291,62 @@ DRS.prototype.readFile = function (id, cb) {
     }
     cb(null, fileInst)
   })
+}
+
+/**
+ * Add a new file to the DRS archive.
+ *
+ * @param {string} type The file type, i.e. the table in which to store the file.
+ *    If a file type is given for which a table does not exist, a new table is created.
+ * @param {number} id The new file ID.
+ * @param {Buffer|Stream} data File contents.
+ * @param {function} cb Function `(err, file)` to call when finished.
+ */
+DRS.prototype.putFile = function (type, id, data, cb) {
+  var file = {
+    id: id,
+    offset: null,
+    size: null,
+    type: type
+  }
+
+  var table
+  for (var i = 0; i < this.tables.length; i += 1) {
+    table = this.tables[i]
+    if (table.ext === type) {
+      break
+    }
+  }
+
+  if (!table) {
+    table = {
+      ext: type,
+      offset: null,
+      numFiles: 0,
+      files: []
+    }
+    this.tables.push(table)
+    this.numTables = this.tables.length
+  }
+
+  if (isBuffer(data)) {
+    setTimeout(function () {
+      onbuffer(null, data)
+    }, 0)
+  }
+  if (isStream(data)) {
+    concat(data, onbuffer)
+  }
+
+  function onbuffer (err, buffer) {
+    if (err) return cb(err)
+    file.buffer = buffer
+
+    table.files.push(file)
+    table.numFiles = table.files.length
+
+    cb(null, file)
+  }
 }
 
 /**

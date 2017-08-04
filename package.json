@@ -13,10 +13,14 @@
   "main": "src/DRS",
   "dependencies": {
     "awestruct": "^0.12.1",
+    "from2-buffer": "^1.0.0",
     "genie-slp": "^0.7.1",
+    "is-buffer": "^1.1.5",
     "jascpal": "^0.1.2",
     "object-assign": "^4.0.1",
     "pump": "^1.0.2",
-    "safe-buffer": "^5.0.1"
+    "safe-buffer": "^5.0.1",
+    "simple-concat": "^1.0.0",
+    "through2": "^2.0.3"
   }
 }
