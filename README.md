@@ -62,6 +62,42 @@ Replaces one file in the DRS.  `id` is the ID of the file to replace, `buffer` i
 
 Reads a file's contents for ID `id`.  The callback gets an `err` and a `DRSFile` subclass instance depending on the type of file. ([SLPFile](#slpfile) for .SLPs, `WAVFile` for .WAVs, [PaletteFile](#palettefile) for palette .BINs, `DRSFile` for other .BINs.)
 
+#### DRS#createReadStream(id)
+
+Returns a Readable stream of the file contents for file ID `id`.
+
+The returned stream also emits a `meta` event with information about the file, like in `getFiles()`.
+
+#### DRS#createWriteStream(type, id)
+
+Returns a stream, stuff that is written to it will be saved in the DRS file.
+Note that this method works in-memory, use the `archive()` method to flush changes back to disk.
+
+The returned stream emits a `meta` event with information about the new file, like in `getFiles()`.
+
+`type` is the file type, i.e. the table in which to store the file.
+ If a file type is given for which a table does not exist, a new table is created.
+ `id` is the new file ID.
+
+#### DRS#archive()
+
+Returns the entire DRS file as a stream.
+If the DRS instance was initialized from an existing DRS file, this method may attempt to read data from that file--it's not safe to pipe the stream straight back to the original DRS file.
+If that is necessary, use a module like [`fs-write-stream-atomic`](https://www.npmjs.com/package/fs-write-stream-atomic), which will not touch the initial file until everything has been read.
+
+```js
+var createWriteStream = require('fs-write-stream-atomic')
+
+var drs = DRS('./archive.drs')
+fs.createReadStream('./custom-palette.pal')
+  .pipe(drs.createWriteStream('bina', 50501))
+  .on('finish', onfinish)
+
+function onfinish () {
+  drs.archive().pipe(createWriteStream('./archive.drs'))
+}
+```
+
 ### SLPFile
 
 Represents a .SLP graphics file in a .DRS archive. Uses [genie-slp](https://github.com/goto-bus-stop/genie-slp) for parsing and rendering.
