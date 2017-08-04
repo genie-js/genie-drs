@@ -214,7 +214,7 @@ DRS.prototype.getFile = function (id) {
  *
  * @param {number} id File ID.
  *
- * @return {Readable} A Readable stream or null if the file does not exist.
+ * @return {Readable} A Readable stream.
  */
 DRS.prototype.createReadStream = function (id) {
   var drs = this
@@ -237,6 +237,7 @@ DRS.prototype.createReadStream = function (id) {
     if (!file) {
       stream.emit('error', new Error('File ' + id + ' does not exist'))
     }
+    stream.emit('meta', file)
     pump(fs.createReadStream(drs.filename, {
       fd: drs.fd,
       start: file.offset,
