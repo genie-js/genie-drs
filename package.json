@@ -16,6 +16,7 @@
     "genie-slp": "^0.7.1",
     "jascpal": "^0.1.2",
     "object-assign": "^4.0.1",
+    "pump": "^1.0.2",
     "safe-buffer": "^5.0.1"
   }
 }

@@ -1,4 +1,6 @@
 var fs = require('fs')
+var stream = require('stream')
+var pump = require('pump')
 var DRSFile = require('./DRSFile')
 var PaletteFile = require('./PaletteFile')
 var SLPFile = require('./SLPFile')
@@ -8,6 +10,7 @@ var Struct = require('awestruct')
 var assign = require('object-assign')
 
 var t = Struct.types
+var PassThrough = stream.PassThrough
 
 module.exports = DRS
 
@@ -214,16 +217,33 @@ DRS.prototype.getFile = function (id) {
  * @return {Readable} A Readable stream or null if the file does not exist.
  */
 DRS.prototype.createReadStream = function (id) {
-  var file = this.getFile(id)
-  if (file) {
-    return fs.createReadStream(this.filename, {
-      fd: this.fd,
+  var drs = this
+
+  var stream = new PassThrough()
+  if (!drs.numTables) {
+    drs.read(onread)
+  } else {
+    onread()
+  }
+
+  return stream
+
+  function onread (err) {
+    if (err) {
+      stream.emit('error', err)
+      return
+    }
+    var file = drs.getFile(id)
+    if (!file) {
+      stream.emit('error', new Error('File ' + id + ' does not exist'))
+    }
+    pump(fs.createReadStream(drs.filename, {
+      fd: drs.fd,
       start: file.offset,
       end: file.offset + file.size - 1,
       autoClose: false
-    })
+    }), stream)
   }
-  return null
 }
 
 /**
