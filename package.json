@@ -11,8 +11,13 @@
   "bugs": "https://github.com/goto-bus-stop/genie-drs/issues",
   "author": "goto-bus-stop <rene@kooi.me>",
   "main": "src/DRS",
+  "browser": {
+    "./src/FsSource": false
+  },
   "dependencies": {
     "awestruct": "^0.12.1",
+    "blob-to-buffer": "^1.2.6",
+    "from2-blob": "^1.0.0",
     "from2-buffer": "^1.0.0",
     "is-buffer": "^1.1.5",
     "multistream": "^2.1.0",

@@ -9,6 +9,7 @@ var assign = require('object-assign')
 var to = require('to2')
 var multistream = require('multistream')
 var FsSource = require('./FsSource')
+var BlobSource = require('./BlobSource')
 
 var t = Struct.types
 
@@ -78,7 +79,12 @@ function DRS (file) {
     file = {}
   }
   if (typeof file === 'string') {
+    if (typeof FsSource !== 'function') {
+      throw new Error('Cannot instantiate with a string filename in the browser')
+    }
     this.source = new FsSource(file)
+  } else if (typeof Blob !== 'undefined' && file instanceof Blob) {
+    this.source = new BlobSource(file)
   } else {
     if (typeof file !== 'object') {
       throw new TypeError('Expected a file path string or an options object, got ' + typeof file)
