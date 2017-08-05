@@ -1,4 +1,3 @@
-var fs = require('fs')
 var through = require('through2')
 var pump = require('pump')
 var concat = require('simple-concat')
@@ -9,6 +8,7 @@ var Struct = require('awestruct')
 var assign = require('object-assign')
 var to = require('to2')
 var multistream = require('multistream')
+var FsSource = require('./FsSource')
 
 var t = Struct.types
 
@@ -72,14 +72,13 @@ function DRS (file) {
   this.files = {}
   this.newOffset = {}
   this.tables = []
-  this.fd = null
   this.isSWGB = null
 
   if (typeof file === 'undefined') {
     file = {}
   }
   if (typeof file === 'string') {
-    this.filename = file
+    this.source = new FsSource(file)
   } else {
     if (typeof file !== 'object') {
       throw new TypeError('Expected a file path string or an options object, got ' + typeof file)
@@ -116,19 +115,14 @@ DRS.prototype.getSize = function () {
 
 /**
  * Opens a DRS file from the file system.
- * @param {string} file Filename to open.
  * @param {function} cb Function to call after opening the file.
  *    Error in first argument, File Descriptor in second (if successful)
  */
 DRS.prototype.open = function (cb) {
-  if (!this.filename) {
+  if (!this.source) {
     throw new Error('Cannot open an in-memory DRS file')
   }
-  fs.open(this.filename, 'r', function (e, fd) {
-    if (e) return cb(e)
-    this.fd = fd
-    cb(null, fd)
-  }.bind(this))
+  this.source.open(cb)
 }
 
 /**
@@ -137,9 +131,8 @@ DRS.prototype.open = function (cb) {
  */
 DRS.prototype.read = function (cb) {
   var drs = this
-  var fd = this.fd
   // make sure we have an open file first
-  if (this.fd === null) {
+  if (!this.source.isOpen()) {
     return this.open(function (e) {
       if (e) cb(e)
       else drs.read(cb)
@@ -149,9 +142,9 @@ DRS.prototype.read = function (cb) {
   var fileOffset = 0
 
   // header is 64 bytes
-  fs.read(fd, Buffer.alloc(HEADER_SIZE_SWGB), 0, HEADER_SIZE_SWGB, 0, onHeader)
+  drs.source.read(0, HEADER_SIZE_SWGB, onHeader)
 
-  function onHeader (err, bytesRead, buf) {
+  function onHeader (err, buf) {
     if (err) return cb(err)
 
     drs.isSWGB = buf.slice(0, COPYRIGHT_SWGB.length).toString('ascii') === COPYRIGHT_SWGB
@@ -164,10 +157,10 @@ DRS.prototype.read = function (cb) {
     assign(drs, readHeader(buf.slice(fileOffset)))
 
     fileOffset += buf.length
-    fs.read(fd, Buffer.alloc(TABLE_META_SIZE * drs.numTables), 0, TABLE_META_SIZE * drs.numTables, fileOffset, onTableInfo)
+    drs.source.read(fileOffset, fileOffset + TABLE_META_SIZE * drs.numTables, onTableInfo)
   }
 
-  function onTableInfo (err, bytesRead, buf) {
+  function onTableInfo (err, buf) {
     if (err) return cb(err)
 
     // Tables reader
@@ -179,10 +172,10 @@ DRS.prototype.read = function (cb) {
     }, 0)
 
     fileOffset += buf.length
-    fs.read(fd, Buffer.alloc(FILE_META_SIZE * totalFiles), 0, FILE_META_SIZE * totalFiles, fileOffset, onTables)
+    drs.source.read(fileOffset, fileOffset + FILE_META_SIZE * totalFiles, onTables)
   }
 
-  function onTables (err, bytesRead, buf) {
+  function onTables (err, buf) {
     if (err) return cb(err)
 
     var offset = 0
@@ -266,12 +259,7 @@ DRS.prototype.createReadStream = function (id) {
       pump(fromBuffer(file.buffer), stream)
       return
     }
-    pump(fs.createReadStream(drs.filename, {
-      fd: drs.fd,
-      start: file.offset,
-      end: file.offset + file.size - 1,
-      autoClose: false
-    }), stream)
+    pump(drs.source.createReadStream(file.offset, file.offset + file.size - 1), stream)
   }
 }
 
@@ -293,8 +281,8 @@ DRS.prototype.readFile = function (id, cb) {
 
   var file = this.getFile(id)
   if (file == null) return cb(new Error('Cannot find file #' + id))
-  fs.read(this.fd, Buffer.alloc(file.size), 0, file.size, file.offset, function (e, bytesRead, buffer) {
-    if (e) cb(e)
+  this.source.read(file.offset, file.offset + file.size, function (err, buffer) {
+    if (err) cb(err)
     else cb(null, buffer, file)
   })
 }
@@ -466,5 +454,5 @@ DRS.prototype.archive = function () {
  * @param {function} cb Callback passed straight to `fs.close`.
  */
 DRS.prototype.close = function (cb) {
-  fs.close(this.fd, cb)
+  this.source.close(cb)
 }
