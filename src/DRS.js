@@ -70,8 +70,6 @@ var tableStruct = Struct({
 function DRS (file) {
   if (!(this instanceof DRS)) return new DRS(file)
 
-  this.files = {}
-  this.newOffset = {}
   this.tables = []
   this.isSWGB = null
 
