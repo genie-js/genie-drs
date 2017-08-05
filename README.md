@@ -1,6 +1,6 @@
 # genie-drs
 
-Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS file reader/writer in Node.js
+Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS file reader/writer for Node.js and the browser
 
 [![NPM](https://nodei.co/npm/genie-drs.png?compact=true)](https://nodei.co/npm/genie-drs)
 
@@ -65,7 +65,7 @@ function onfinish () {
 
 ## API
 
-### DRS([options])
+### `DRS([options])`
 
 Create a new DRS file. Options can be:
 
@@ -75,19 +75,29 @@ Create a new DRS file. Options can be:
  - `fileVersion` - Version number as a 4-character string, default '1.00'.
  - `fileType` - File type as a 12-character string, pad with NUL bytes. Default 'tribe\0\0\0\0\0\0\0' like in Age of Empires 2 files.
 
-### DRS(filename)
+### `DRS(filename: string)`
+
+> Node only!
 
 Creates a new DRS instance for the .DRS file `filename`.
 
-#### DRS#read(callback)
+### `DRS(blob: Blob)`
 
-Reads the DRS table headers.  You have to call this before calling any other method, except `.readFile`, which will implicitly call `.read` if it you haven't done so yet.  `callback` takse an error `err` or `null` if everything's fine.
+> Browser only!
 
-#### DRS#getSize()
+Creates a new DRS instance for the given Blob instance.
+
+#### `DRS#read(callback)`
+
+Reads the DRS table headers.
+This only needs to be called manually if `getFiles()` or `getSize()` is used.
+Otherwise, `genie-drs` will call it automatically when necessary.
+
+#### `DRS#getSize(): number`
 
 Returns the size of the DRS file.  Includes any unsaved modifications.  Won't work if the file hasn't been `.read()` yet.
 
-#### DRS#getFiles()
+#### `DRS#getFiles(): Array&lt;{id, type, size, offset}>`
 
 Returns an array of all the file entries in this DRS file.  Format:
 ```javascript
@@ -100,25 +110,25 @@ Returns an array of all the file entries in this DRS file.  Format:
 
 Won't work if the file hasn't been `.read()` yet.
 
-#### DRS#getFile(id)
+#### `DRS#getFile(id: number): { id, type, size, offset }`
 
 Finds one file entry by its file ID.  See [DRS#getFiles()](#drsgetfiles)
 
-#### DRS#putFile(id, buffer, callback)
+#### `DRS#putFile(id: number, buffer: Buffer, callback)`
 
 Replaces one file in the DRS.  `id` is the ID of the file to replace, `buffer` is a Buffer or string with the new file contents, `callback` is a function receiving an `err` and the new file table entry.
 
-#### DRS#readFile(id, callback)
+#### `DRS#readFile(id: number, callback)`
 
 Reads a file's contents for ID `id`.  The callback gets an `err` and a `Buffer` containing the file contents.
 
-#### DRS#createReadStream(id)
+#### `DRS#createReadStream(id: number): Readable`
 
 Returns a Readable stream of the file contents for file ID `id`.
 
 The returned stream also emits a `meta` event with information about the file, like in `getFiles()`.
 
-#### DRS#createWriteStream(type, id)
+#### `DRS#createWriteStream(type: string, id: number): Writable`
 
 Returns a stream, stuff that is written to it will be saved in the DRS file.
 Note that this method works in-memory, use the `archive()` method to flush changes back to disk.
@@ -129,7 +139,7 @@ The returned stream emits a `meta` event with information about the new file, li
  If a file type is given for which a table does not exist, a new table is created.
  `id` is the new file ID.
 
-#### DRS#archive()
+#### `DRS#archive(): Readable`
 
 Returns the entire DRS file as a stream.
 If the DRS instance was initialized from an existing DRS file, this method may attempt to read data from that file--it's not safe to pipe the stream straight back to the original DRS file.
