@@ -9,10 +9,6 @@ var Struct = require('awestruct')
 var assign = require('object-assign')
 var to = require('to2')
 var multistream = require('multistream')
-var DRSFile = require('./DRSFile')
-var PaletteFile = require('./PaletteFile')
-var SLPFile = require('./SLPFile')
-var WAVFile = require('./WAVFile')
 
 var t = Struct.types
 
@@ -302,19 +298,9 @@ DRS.prototype.readFile = function (id, cb) {
 
   var file = this.getFile(id)
   if (file == null) return cb(new Error('Cannot find file #' + id))
-  fs.read(this.fd, Buffer.alloc(file.size), 0, file.size, file.offset, function (e, bytesRead, buf) {
-    if (e) return cb(e)
-    var fileInst
-    if (file.type === 'slp ') {
-      fileInst = new SLPFile(buf, file)
-    } else if (file.type === 'wav ') {
-      fileInst = new WAVFile(buf, file)
-    } else if (file.type === 'bina' && buf.slice(0, 8).toString('ascii') === 'JASC-PAL') {
-      fileInst = new PaletteFile(buf, file)
-    } else {
-      fileInst = new DRSFile(buf, file)
-    }
-    cb(null, fileInst)
+  fs.read(this.fd, Buffer.alloc(file.size), 0, file.size, file.offset, function (e, bytesRead, buffer) {
+    if (e) cb(e)
+    else cb(null, buffer, file)
   })
 }
 

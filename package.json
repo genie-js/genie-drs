@@ -14,9 +14,7 @@
   "dependencies": {
     "awestruct": "^0.12.1",
     "from2-buffer": "^1.0.0",
-    "genie-slp": "^0.7.1",
     "is-buffer": "^1.1.5",
-    "jascpal": "^0.1.2",
     "multistream": "^2.1.0",
     "object-assign": "^4.0.1",
     "pump": "^1.0.2",

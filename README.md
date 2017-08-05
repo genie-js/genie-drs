@@ -60,7 +60,7 @@ Replaces one file in the DRS.  `id` is the ID of the file to replace, `buffer` i
 
 #### DRS#readFile(id, callback)
 
-Reads a file's contents for ID `id`.  The callback gets an `err` and a `DRSFile` subclass instance depending on the type of file. ([SLPFile](#slpfile) for .SLPs, `WAVFile` for .WAVs, [PaletteFile](#palettefile) for palette .BINs, `DRSFile` for other .BINs.)
+Reads a file's contents for ID `id`.  The callback gets an `err` and a `Buffer` containing the file contents.
 
 #### DRS#createReadStream(id)
 
@@ -97,32 +97,3 @@ function onfinish () {
   drs.archive().pipe(createWriteStream('./archive.drs'))
 }
 ```
-
-### SLPFile
-
-Represents a .SLP graphics file in a .DRS archive. Uses [genie-slp](https://github.com/goto-bus-stop/genie-slp) for parsing and rendering.
-
-#### SLPFile#slp
-
-Genie-slp instance.
-
-#### SLPFile#renderFrame(frameId, palette, opts)
-
-Renders a frame to a PNG buffer. `frameId` is the frame to render, `palette` is the Palette to use (either an array of colours, a jascpal instance, or a `PaletteFile`), `opts` are [genie-slp](https://github.com/goto-bus-stop/genie-slp#slprenderframeframeindex--palette-player----buffer-width-height-) options.
-
-### PaletteFile
-
-Represents a .BIN Paint Shop Pro palette file in a .DRS archive. Palette files use
-[jascpal](https://github.com/goto-bus-stop/jascpal) for parsing.
-
-#### PaletteFile#palette
-
-Jascpal instance.
-
-#### PaletteFile#getColor(idx)
-
-Returns the `[r, g, b]` colour at index `idx`.
-
-#### PaletteFile#setColor(idx, color)
-
-Sets the colour at index `idx` to the specified `[r, g, b]` array `color`.
