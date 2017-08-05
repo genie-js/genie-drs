@@ -90,14 +90,16 @@ Creates a new DRS instance for the given Blob instance.
 #### `DRS#read(callback)`
 
 Reads the DRS table headers.
-This only needs to be called manually if `getFiles()` or `getSize()` is used.
+This only needs to be called manually if [`getFiles()`](#drs-getfiles) or [`getSize()`](#drs-getsize) is used.
 Otherwise, `genie-drs` will call it automatically when necessary.
 
+<a id="drs-getsize"></a>
 #### `DRS#getSize(): number`
 
 Returns the size of the DRS file.  Includes any unsaved modifications.  Won't work if the file hasn't been `.read()` yet.
 
-#### `DRS#getFiles(): Array&lt;{id, type, size, offset}>`
+<a id="drs-getfiles"></a>
+#### `DRS#getFiles(): Array<{id, type, size, offset}>`
 
 Returns an array of all the file entries in this DRS file.  Format:
 ```javascript
@@ -112,11 +114,16 @@ Won't work if the file hasn't been `.read()` yet.
 
 #### `DRS#getFile(id: number): { id, type, size, offset }`
 
-Finds one file entry by its file ID.  See [DRS#getFiles()](#drsgetfiles)
+Finds one file entry by its file ID.  See [DRS#getFiles()](#drs-getfiles)
 
-#### `DRS#putFile(id: number, buffer: Buffer, callback)`
+#### `DRS#putFile(type: string, id: number, buffer: Buffer, callback)`
 
-Replaces one file in the DRS.  `id` is the ID of the file to replace, `buffer` is a Buffer or string with the new file contents, `callback` is a function receiving an `err` and the new file table entry.
+Replaces one file in the DRS.
+
+`type` is the file type, i.e. the table in which to store the file.
+ If a file type is given for which a table does not exist, a new table is created.
+ `id` is the new file ID.
+ `buffer` is a Buffer or string with the new file contents.
 
 #### `DRS#readFile(id: number, callback)`
 
