@@ -92,11 +92,6 @@ function DRS (file) {
   }
 }
 
-DRS.File = DRSFile
-DRS.SLPFile = SLPFile
-DRS.WAVFile = WAVFile
-DRS.PaletteFile = PaletteFile
-
 DRS.prototype.getFileCount = function () {
   return this.tables.reduce(function (a, t) { return a + t.files.length }, 0)
 }

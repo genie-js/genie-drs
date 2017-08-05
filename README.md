@@ -6,28 +6,78 @@ Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS 
 
 ## Usage Example
 
+Read a palette file and a unit graphic from the Age of Empires 2 data files:
+
 ```javascript
-var Png = require('png').Png
+var DRS = require('genie-drs')
+var Palette = require('jascpal')
+var SLP = require('genie-slp')
+var PNG = require('pngjs').PNG
+
 // using Age of Empires 2 files
 var int = DRS('interfac.drs')
   , gra = DRS('graphics.drs')
+
 // id 50500 is the main in-game palette.
-int.readFile(50500, function (e, palette) {
+int.readFile(50500, function (err, buffer) {
+  if (err) throw err
+  var palette = Palette(buffer)
   int.close()
-  // 3088 is the 'Champion Dying' graphic.
-  gra.readFile(3088, function (e, slp) {
-    var frame = slp.renderFrame(1, palette, { player: 1, drawOutline: false })
-      , png = new Png(frame.buffer, frame.width, frame.height, 'rgba')
-    fs.writeFile('champion-dying.png', png.encode())
-  })
+  onpalette(palette)
 })
+
+function onpalette (palette) {
+  // 3088 is the 'Champion Dying' graphic.
+  gra.readFile(3088, function (err, buffer) {
+    if (err) throw err
+    var slp = SLP(buffer)
+    onslp(palette, slp)
+  })
+}
+
+function onslp (palette, slp) {
+  var frame = slp.renderFrame(1, palette, { player: 1, drawOutline: false })
+  var png = new PNG({
+    width: frame.width,
+    height: frame.height
+  })
+  png.data = Buffer.from(frame.data.buffer)
+  png.pack().pipe(fs.createWriteStream('champion-dying.png'))
+}
+```
+
+Create a new DRS file:
+
+```js
+var DRS = require('genie-drs')
+var after = require('after')
+var drs = DRS()
+
+var cb = after(3, onfinish)
+fs.createReadStream('./somefile.slp').pipe(drs.createWriteStream('slp ', 1, cb))
+fs.createReadStream('./bgm.wav').pipe(drs.createWriteStream('wav ', 2, cb))
+fs.createReadStream('./palette.pal').pipe(drs.createWriteStream('bina', 3, cb))
+
+function onfinish () {
+  drs.archive().pipe(fs.createWriteStream('./archive.drs'))
+}
 ```
 
 ## API
 
+### DRS([options])
+
+Create a new DRS file. Options can be:
+
+ - `isSWGB` - Whether this is a file for Star Wars: Galactic Battlegrounds. Default `false`.
+ - `copyright` - Copyright string to use, uses the Age of Empires or Star Wars: Galactic Battlegrounds string by default.
+   This should be exactly 40 characters long for DRS files intended for AoE and exactly 60 characters long for DRS files for SWGB.
+ - `fileVersion` - Version number as a 4-character string, default '1.00'.
+ - `fileType` - File type as a 12-character string, pad with NUL bytes. Default 'tribe\0\0\0\0\0\0\0' like in Age of Empires 2 files.
+
 ### DRS(filename)
 
-Creates a new DRS reader instance for the .DRS file `filename`.
+Creates a new DRS instance for the .DRS file `filename`.
 
 #### DRS#read(callback)
 
