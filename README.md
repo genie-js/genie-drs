@@ -164,3 +164,7 @@ function onfinish () {
   drs.archive().pipe(createWriteStream('./archive.drs'))
 }
 ```
+
+## License
+
+[MIT](./LICENSE)
