@@ -415,8 +415,13 @@ DRS.prototype.archive = function () {
   }
 
   function getTableInfo () {
+    var tableOffset = (drs.isSWGB ? HEADER_SIZE_SWGB : HEADER_SIZE_AOE) +
+          TABLE_META_SIZE * drs.tables.length
+
     return fromBuffer(Buffer.concat(
       drs.tables.map(function (table) {
+        table.offset = tableOffset
+        tableOffset += table.numFiles * FILE_META_SIZE
         return tableStruct.encode(table)
       })
     ))
