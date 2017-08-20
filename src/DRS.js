@@ -292,24 +292,21 @@ DRS.prototype.readFile = function (id, cb) {
 }
 
 function getTable (drs, type) {
-  var table
   for (var i = 0; i < drs.tables.length; i += 1) {
-    table = drs.tables[i]
+    var table = drs.tables[i]
     if (table.ext === type) {
-      break
+      return table
     }
   }
 
-  if (!table) {
-    table = {
-      ext: type,
-      offset: null,
-      numFiles: 0,
-      files: []
-    }
-    drs.tables.push(table)
-    drs.numTables = drs.tables.length
+  var table = {
+    ext: type,
+    offset: null,
+    numFiles: 0,
+    files: []
   }
+  drs.tables.push(table)
+  drs.numTables = drs.tables.length
 
   return table
 }
