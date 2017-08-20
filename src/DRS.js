@@ -40,6 +40,7 @@ var parseTableType = function (num) {
 
 // Serialize a table type string to a 32-bit integer.
 var serializeTableType = function (str) {
+  while (str.length < 4) str += ' '
   for (var num = 0, i = 0; i < 4; i++) {
     num = (num << 8) + str.charCodeAt(i)
   }
