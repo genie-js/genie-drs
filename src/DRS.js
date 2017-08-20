@@ -439,6 +439,7 @@ DRS.prototype.archive = function () {
         buffer.writeInt32LE(fileOffset, offset)
         offset += 4
         buffer.writeInt32LE(file.size, offset)
+        offset += 4
         fileOffset += file.size
       }
       return fromBuffer(buffer)
