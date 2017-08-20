@@ -238,8 +238,9 @@ DRS.prototype.getFile = function (id) {
  *
  * @return {Readable} A Readable stream.
  */
-DRS.prototype.createReadStream = function (id) {
+DRS.prototype.createReadStream = function (id, opts) {
   var drs = this
+  opts = opts || {}
 
   var stream = through()
   if (!drs.numTables) {
@@ -264,7 +265,16 @@ DRS.prototype.createReadStream = function (id) {
       pump(fromBuffer(file.buffer), stream)
       return
     }
-    pump(drs.source.createReadStream(file.offset, file.offset + file.size - 1), stream)
+
+    var start = 0
+    var end = file.size - 1
+    if (opts && typeof opts.start === 'number') {
+      start = opts.start
+    }
+    if (opts && typeof opts.end === 'number') {
+      end = opts.end
+    }
+    pump(drs.source.createReadStream(file.offset + start, file.offset + end), stream)
   }
 }
 
@@ -274,19 +284,33 @@ DRS.prototype.createReadStream = function (id) {
  * @param {number} id File ID.
  * @param {function} cb Function `(err, file)` to call when finished. `file` is a `DRSFile` object.
  */
-DRS.prototype.readFile = function (id, cb) {
+DRS.prototype.readFile = function (id, opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts
+    opts = {}
+  }
+
   var drs = this
   // make sure we've read tables first
   if (!this.numTables) {
     return this.read(function (e) {
       if (e) cb(e)
-      else drs.readFile(id, cb)
+      else drs.readFile(id, opts, cb)
     })
   }
 
   var file = this.getFile(id)
   if (file == null) return cb(new Error('Cannot find file #' + id))
-  this.source.read(file.offset, file.offset + file.size, function (err, buffer) {
+
+  var start = 0
+  var end = file.size
+  if (opts && typeof opts.start === 'number') {
+    start = opts.start
+  }
+  if (opts && typeof opts.end === 'number') {
+    end = opts.end
+  }
+  this.source.read(file.offset + start, file.offset + end, function (err, buffer) {
     if (err) cb(err)
     else cb(null, buffer, file)
   })

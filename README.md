@@ -125,15 +125,25 @@ Replaces one file in the DRS.
  `id` is the new file ID.
  `buffer` is a Buffer or string with the new file contents.
 
-#### `DRS#readFile(id: number, callback)`
+#### `DRS#readFile(id: number[, options], callback)`
 
 Reads a file's contents for ID `id`.  The callback gets an `err` and a `Buffer` containing the file contents.
 
-#### `DRS#createReadStream(id: number): Readable`
+Optionally, provide an `options` object to read only part of the file:
+
+ - `start` - Byte offset inside the file to start reading at.
+ - `end` - Byte offset inside the file to stop reading at.
+
+#### `DRS#createReadStream(id: number[, options]): Readable`
 
 Returns a Readable stream of the file contents for file ID `id`.
 
 The returned stream also emits a `meta` event with information about the file, like in `getFiles()`.
+
+Optionally, provide an `options` object to read only part of the file:
+
+ - `start` - Byte offset inside the file to start reading at.
+ - `end` - Byte offset inside the file to stop reading at.
 
 #### `DRS#createWriteStream(type: string, id: number): Writable`
 
