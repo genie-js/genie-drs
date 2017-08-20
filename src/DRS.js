@@ -385,19 +385,21 @@ DRS.prototype.createWriteStream = function (type, id) {
   var table = getTable(this, type)
 
   var data = []
-  var cb = createFileBufferCallback(file, table, onfinish)
   var stream = to(function (chunk, enc, next) {
     data.push(chunk)
     next()
   }, function (next) {
+    var cb = createFileBufferCallback(file, table, onfinish)
     cb(null, Buffer.concat(data))
-    next()
-  })
 
-  function onfinish (err, file) {
-    if (err) stream.emit('error', err)
-    else stream.emit('meta', file)
-  }
+    function onfinish (err, file) {
+      if (!err) {
+        stream.emit('meta', file)
+      }
+
+      next(err)
+    }
+  })
 
   return stream
 }
