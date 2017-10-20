@@ -1,8 +1,11 @@
 # genie-drs
 
-Genie Engine (used in Age of Empires 1&2, Star Wars Galactic Battlegrounds) DRS file reader/writer for Node.js and the browser
+Genie Engine DRS file reader/writer for Node.js and the browser
 
-[![NPM](https://nodei.co/npm/genie-drs.png?compact=true)](https://nodei.co/npm/genie-drs)
+.DRS files are archive files used in the Age of Empires 1 and 2 and Star Wars: Galactic Battlegrounds games.
+A [format specification](https://github.com/SFTtech/openage/blob/master/doc/media/drs-files.md) is available in the openage project.
+
+[![NPM](https://nodei.co/npm/genie-drs.png?compact=true)](https://npmjs.com/package/genie-drs)
 
 ## Usage Example
 
