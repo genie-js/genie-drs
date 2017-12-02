@@ -15,14 +15,14 @@
     "./src/FsSource": false
   },
   "dependencies": {
-    "awestruct": "^0.12.1",
+    "awestruct": "^1.0.0",
     "blob-to-buffer": "^1.2.6",
     "from2-blob": "^1.0.1",
     "from2-buffer": "^1.0.0",
-    "is-buffer": "^1.1.5",
+    "is-buffer": "^1.1.6",
     "multistream": "^2.1.0",
     "object-assign": "^4.0.1",
-    "pump": "^1.0.2",
+    "pump": "^1.0.3",
     "safe-buffer": "^5.0.1",
     "simple-concat": "^1.0.0",
     "through2": "^2.0.3",
