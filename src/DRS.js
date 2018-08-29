@@ -82,15 +82,16 @@ function DRS (file) {
       throw new Error('Cannot instantiate with a string filename in the browser')
     }
     this.source = new FsSource(file)
-  } else if (typeof Blob !== 'undefined' && file instanceof Blob) {
+  } else if (typeof Blob !== 'undefined' && file instanceof Blob) { // eslint-disable-line no-undef
     this.source = new BlobSource(file)
   } else {
     if (typeof file !== 'object') {
       throw new TypeError('Expected a file path string or an options object, got ' + typeof file)
     }
     this.isSWGB = file.hasOwnProperty('isSWGB') ? file.isSWGB : false
-    this.copyright = file.hasOwnProperty('copyright') ? file.copyright :
-      (this.isSWGB ? COPYRIGHT_SWGB : COPYRIGHT_AOE)
+    this.copyright = file.hasOwnProperty('copyright')
+      ? file.copyright
+      : (this.isSWGB ? COPYRIGHT_SWGB : COPYRIGHT_AOE)
     this.fileVersion = file.hasOwnProperty('fileVersion') ? file.fileVersion : '1.00'
     this.fileType = file.hasOwnProperty('fileType') ? file.fileType : 'tribe\0\0\0\0\0\0\0'
   }
@@ -324,16 +325,16 @@ function getTable (drs, type) {
     }
   }
 
-  var table = {
+  var newTable = {
     ext: type,
     offset: null,
     numFiles: 0,
     files: []
   }
-  drs.tables.push(table)
+  drs.tables.push(newTable)
   drs.numTables = drs.tables.length
 
-  return table
+  return newTable
 }
 
 function newFile (type, id) {
