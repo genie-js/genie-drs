@@ -178,6 +178,10 @@ function onfinish () {
 }
 ```
 
+## Related
+
+ * [drs-extract](https://github.com/goto-bus-stop/drs-extract) - CLI for this module.
+
 ## License
 
 [MIT](./LICENSE)
