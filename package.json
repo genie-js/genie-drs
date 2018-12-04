@@ -27,5 +27,11 @@
     "simple-concat": "^1.0.0",
     "through2": "^2.0.3",
     "to2": "^1.0.0"
+  },
+  "devDependencies": {
+    "standard": "^12.0.1"
+  },
+  "scripts": {
+    "test": "standard"
   }
 }
