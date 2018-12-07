@@ -7,9 +7,9 @@
     "genie",
     "age of empires"
   ],
-  "repository": "goto-bus-stop/genie-drs",
-  "bugs": "https://github.com/goto-bus-stop/genie-drs/issues",
-  "author": "goto-bus-stop <rene@kooi.me>",
+  "repository": "genie-js/genie-drs",
+  "bugs": "https://github.com/genie-js/genie-drs/issues",
+  "author": "Renée Kooi <renee@kooi.me>",
   "main": "src/DRS",
   "browser": {
     "./src/FsSource": false

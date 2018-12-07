@@ -180,7 +180,7 @@ function onfinish () {
 
 ## Related
 
- * [drs-extract](https://github.com/goto-bus-stop/drs-extract) - CLI for this module.
+ * [drs-extract](https://github.com/genie-js/drs-extract) - CLI for this module.
 
 ## License
 
