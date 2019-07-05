@@ -23,7 +23,7 @@
     "multistream": "^2.1.1",
     "object-assign": "^4.0.1",
     "pump": "^3.0.0",
-    "safe-buffer": "^5.1.2",
+    "safe-buffer": "^5.2.0",
     "simple-concat": "^1.0.0",
     "through2": "^3.0.0",
     "to2": "^1.0.0"
