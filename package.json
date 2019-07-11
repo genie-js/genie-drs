@@ -29,7 +29,7 @@
     "to2": "^1.0.0"
   },
   "devDependencies": {
-    "standard": "^12.0.1"
+    "standard": "^13.0.1"
   },
   "scripts": {
     "test": "standard"
