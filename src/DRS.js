@@ -21,6 +21,10 @@ function isStream (stream) {
     typeof stream.pipe === 'function'
 }
 
+function has (obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop)
+}
+
 var HEADER_SIZE_AOE = 64
 var HEADER_SIZE_SWGB = 84
 var TABLE_META_SIZE = 12
@@ -30,7 +34,7 @@ var COPYRIGHT_AOE = 'Copyright (c) 1997 Ensemble Studios.\0\0\0\0'
 var COPYRIGHT_SWGB = 'Copyright (c) 2001 LucasArts Entertainment Company LLC'
 
 // Parse a numeric table type to a string.
-var parseTableType = function (num) {
+function parseTableType (num) {
   for (var ext = '', i = 0; i < 4; i++) {
     ext = String.fromCharCode(num & 0xFF) + ext
     num >>= 8
@@ -39,7 +43,7 @@ var parseTableType = function (num) {
 }
 
 // Serialize a table type string to a 32-bit integer.
-var serializeTableType = function (str) {
+function serializeTableType (str) {
   while (str.length < 4) str += ' '
   for (var num = 0, i = 0; i < 4; i++) {
     num = (num << 8) + str.charCodeAt(i)
@@ -47,7 +51,7 @@ var serializeTableType = function (str) {
   return num
 }
 
-var headerStruct = function (isSwgb) {
+function headerStruct (isSwgb) {
   return Struct({
     copyright: isSwgb ? t.char(60) : t.char(40),
     fileVersion: t.char(4),
@@ -88,12 +92,12 @@ function DRS (file) {
     if (typeof file !== 'object') {
       throw new TypeError('Expected a file path string or an options object, got ' + typeof file)
     }
-    this.isSWGB = file.hasOwnProperty('isSWGB') ? file.isSWGB : false
-    this.copyright = file.hasOwnProperty('copyright')
+    this.isSWGB = has(file, 'isSWGB') ? file.isSWGB : false
+    this.copyright = has(file, 'copyright')
       ? file.copyright
       : (this.isSWGB ? COPYRIGHT_SWGB : COPYRIGHT_AOE)
-    this.fileVersion = file.hasOwnProperty('fileVersion') ? file.fileVersion : '1.00'
-    this.fileType = file.hasOwnProperty('fileType') ? file.fileType : 'tribe\0\0\0\0\0\0\0'
+    this.fileVersion = has(file, 'fileVersion') ? file.fileVersion : '1.00'
+    this.fileType = has(file, 'fileType') ? file.fileType : 'tribe\0\0\0\0\0\0\0'
   }
 }
 
@@ -477,7 +481,7 @@ DRS.prototype.archive = function () {
     }
   })
 
-  var chunks = [ getHeader, getTableInfo ]
+  var chunks = [getHeader, getTableInfo]
     .concat(tables)
     .concat(files)
 
