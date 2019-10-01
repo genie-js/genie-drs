@@ -19,7 +19,7 @@
     "blob-to-buffer": "^1.2.8",
     "from2-blob": "^1.0.1",
     "from2-buffer": "^1.0.0",
-    "is-buffer": "^2.0.3",
+    "is-buffer": "^2.0.4",
     "multistream": "^2.1.1",
     "object-assign": "^4.0.1",
     "pump": "^3.0.0",
